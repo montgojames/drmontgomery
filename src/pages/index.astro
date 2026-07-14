@@ -1,0 +1,142 @@
+---
+import { Image } from 'astro:assets';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import DuringYourStaySection from '../components/DuringYourStaySection.astro';
+import DecisionsAndNextStepsSection from '../components/DecisionsAndNextStepsSection.astro';
+import MedicalConditionsSection from '../components/MedicalConditionsSection.astro';
+import brettPhoto from '../assets/images/brett-montgomery.jpeg';
+---
+
+<BaseLayout title="Home" pagefindIgnore>
+  <div class="container hero">
+    <div class="hero__top">
+      <Image src={brettPhoto} alt="Dr. Brett Montgomery" width={400} height={446} class="hero__photo hero__photo--desktop" />
+      <div class="hero__text">
+        <h1 class="hero__quote">The goal of this website is to inform, educate, and promote understanding for the hospitalized patient.</h1>
+        <div class="hero__byline-row">
+          <Image src={brettPhoto} alt="Dr. Brett Montgomery" width={400} height={446} class="hero__photo hero__photo--mobile" />
+          <p class="hero__byline">—Brett Montgomery, MD</p>
+        </div>
+      </div>
+    </div>
+    <p class="kicker">Select a category below for more information.</p>
+  </div>
+
+  <DuringYourStaySection />
+  <DecisionsAndNextStepsSection />
+  <MedicalConditionsSection />
+</BaseLayout>
+
+<style>
+  .hero {
+    padding-block: 3rem 0;
+  }
+
+  /* Mobile: quote runs full width alone, no photo in its text flow.
+     The photo only appears below, paired with the byline as its own
+     row — trying to keep it beside the whole quote at this width is
+     what previously caused the text to wrap awkwardly around it. */
+  .hero__top {
+    margin-bottom: 1.75rem;
+  }
+
+  .hero__photo--desktop {
+    display: none;
+  }
+
+  .hero__quote {
+    font-family: var(--font-heading);
+    font-weight: 400;
+    font-size: clamp(1.6rem, 3vw + 1.1rem, 2.05rem);
+    line-height: 1.5;
+    color: var(--color-ink);
+    margin: 0;
+  }
+
+  .kicker {
+    font-size: 1.2rem;
+  }
+
+  .hero__byline-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-top: 0.75rem;
+  }
+
+  .hero__photo--mobile {
+    width: auto;
+    height: 4.5rem;
+    aspect-ratio: 400 / 446;
+    object-fit: cover;
+    border-radius: 0.5rem;
+    display: block;
+    flex-shrink: 0;
+  }
+
+  .hero__byline {
+    color: var(--color-ink-soft);
+    font-size: 1.05rem;
+    margin: 0;
+  }
+
+  /* Desktop: photo sits beside the quote block, sized proportionally
+     to it. This is a distinct layout, not a scaled-up version of the
+     mobile one. */
+  @media (min-width: 48rem) {
+    .hero__top {
+      display: flex;
+      align-items: stretch;
+      gap: 1.5rem;
+    }
+
+    .hero__photo--desktop {
+      /* flex-basis:0 keeps the image's own intrinsic size from setting
+         the row's height (which would let a naturally-tall photo
+         dictate the row instead of the text); with that neutralized,
+         the row's height comes from .hero__text's content, and flex's
+         stretch alignment grows the image to fill it, preserving its
+         aspect ratio (a replaced element with an intrinsic ratio keeps
+         that ratio when stretched — no cropping). zoom:0.5 then shrinks
+         the whole resolved box — both the rendered pixels and the space
+         it reserves in the row — by half. (transform: scale was tried
+         first but only resizes the painted pixels, not the layout box,
+         leaving a mismatched gap; a nested percentage-height wrapper
+         was tried next but created a circular sizing dependency the
+         browser couldn't resolve, so the image just vanished.) */
+      display: block;
+      flex: 0 0 0;
+      height: auto;
+      border-radius: 0.75rem;
+      zoom: 0.5;
+    }
+
+    .hero__text {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-width: 0;
+    }
+
+    .hero__byline-row {
+      display: contents;
+    }
+
+    .hero__photo--mobile {
+      display: none;
+    }
+
+    .hero__byline {
+      margin: 0.5rem 0 0;
+    }
+
+    /* Bigger than the mobile size — the photo beside the quote here has
+       real visual weight (unlike the small byline-paired thumbnail on
+       mobile), so the text needs to scale up to match it, not just carry
+       over the mobile clamp. */
+    .hero__quote {
+      font-size: clamp(2.1rem, 1.8vw + 1.6rem, 2.6rem);
+    }
+  }
+</style>

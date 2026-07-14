@@ -1,0 +1,80 @@
+---
+import { Printer, Share2 } from '@lucide/astro';
+
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+---
+
+<div class="article-actions" data-share-title={title}>
+  <button type="button" class="btn btn-secondary" data-action="print">
+    <Printer class="btn-icon" stroke-width={1.75} aria-hidden="true" />
+    Print this article
+  </button>
+  <button type="button" class="btn btn-secondary" data-action="share">
+    <Share2 class="btn-icon" stroke-width={1.75} aria-hidden="true" />
+    <span data-share-label aria-live="polite">Share</span>
+  </button>
+</div>
+
+<script>
+  const containers = document.querySelectorAll<HTMLElement>('.article-actions');
+
+  containers.forEach((container) => {
+    const printBtn = container.querySelector<HTMLButtonElement>('[data-action="print"]');
+    printBtn?.addEventListener('click', () => window.print());
+
+    const shareBtn = container.querySelector<HTMLButtonElement>('[data-action="share"]');
+    const shareLabel = container.querySelector<HTMLElement>('[data-share-label]');
+    const title = container.dataset.shareTitle ?? document.title;
+    const canShare = typeof navigator.share === 'function';
+
+    if (!canShare && shareLabel) {
+      shareLabel.textContent = 'Copy Link';
+    }
+
+    shareBtn?.addEventListener('click', async () => {
+      const url = window.location.href;
+
+      if (canShare) {
+        try {
+          await navigator.share({ title, url });
+        } catch {
+          // User cancelled the share sheet or it failed — nothing to recover from here.
+        }
+        return;
+      }
+
+      try {
+        await navigator.clipboard.writeText(url);
+        if (shareLabel) {
+          const previous = shareLabel.textContent;
+          shareLabel.textContent = 'Link copied';
+          setTimeout(() => {
+            shareLabel.textContent = previous;
+          }, 2000);
+        }
+      } catch {
+        // Clipboard write failed (permissions, insecure context, etc.) — no backend to fall back to.
+      }
+    });
+  });
+</script>
+
+<style>
+  .article-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    /* No width/centering here — this renders inside TopicLayout.astro's
+       .prose-column wrapper (via the "actions" slot), so it inherits the
+       right width for free. No top margin needed — the accent-rule right
+       above already carries its own bottom margin. The larger bottom
+       margin here is the extra breathing room before the article body
+       starts. */
+    margin-top: 0;
+    margin-bottom: 2rem;
+  }
+</style>

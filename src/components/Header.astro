@@ -1,0 +1,472 @@
+---
+import { Menu, X, ChevronDown } from '@lucide/astro';
+import { navItems, topicHref } from '../data/navigation';
+
+const currentPath = Astro.url.pathname;
+const isLinkActive = (href: string) => href !== '#' && currentPath === href;
+const isGroupActive = (group: (typeof navItems)[number] & { type: 'group' }) =>
+  group.topics.some((topic) => currentPath === topicHref(group, topic));
+---
+
+<header class="site-header">
+  <div class="site-header__inner">
+    <a class="wordmark" href="/">Dr. Montgomery</a>
+
+    <nav class="primary-nav" aria-label="Main">
+      <ul>
+        {
+          navItems.map((item) =>
+            item.type === 'group' ? (
+              <li class="nav-group">
+                <button
+                  type="button"
+                  class:list={['nav-group__trigger', { 'is-active': isGroupActive(item) }]}
+                  aria-expanded="false"
+                  aria-controls={`desktop-panel-${item.slug}`}
+                >
+                  {item.label}
+                  <ChevronDown class="nav-group__chevron" stroke-width={1.75} />
+                </button>
+                <ul id={`desktop-panel-${item.slug}`} class="nav-dropdown" hidden>
+                  {item.topics.map((topic) => (
+                    <li>
+                      <a
+                        href={topicHref(item, topic)}
+                        aria-current={isLinkActive(topicHref(item, topic)) ? 'page' : undefined}
+                        class={isLinkActive(topicHref(item, topic)) ? 'is-active' : ''}
+                      >
+                        {topic.label}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            ) : (
+              <li>
+                <a href={item.href} aria-current={isLinkActive(item.href) ? 'page' : undefined} class={isLinkActive(item.href) ? 'is-active' : ''}>
+                  {item.label}
+                </a>
+              </li>
+            )
+          )
+        }
+      </ul>
+    </nav>
+
+    <button type="button" class="menu-toggle" aria-expanded="false" aria-controls="mobile-menu" aria-label="Menu">
+      <Menu class="menu-toggle__icon icon-open" stroke-width={1.75} />
+      <X class="menu-toggle__icon icon-close" stroke-width={1.75} />
+    </button>
+  </div>
+
+  <nav id="mobile-menu" class="mobile-menu" aria-label="Main" hidden>
+    <ul>
+      {
+        navItems.map((item) =>
+          item.type === 'group' ? (
+            <li class="mobile-group">
+              <button
+                type="button"
+                class:list={['mobile-group__trigger', { 'is-active': isGroupActive(item) }]}
+                aria-expanded="false"
+                aria-controls={`mobile-panel-${item.slug}`}
+              >
+                {item.label}
+                <ChevronDown class="mobile-group__chevron" stroke-width={1.75} />
+              </button>
+              <ul id={`mobile-panel-${item.slug}`} class="mobile-accordion" hidden>
+                {item.topics.map((topic) => (
+                  <li>
+                    <a
+                      href={topicHref(item, topic)}
+                      aria-current={isLinkActive(topicHref(item, topic)) ? 'page' : undefined}
+                      class={isLinkActive(topicHref(item, topic)) ? 'is-active' : ''}
+                    >
+                      {topic.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </li>
+          ) : (
+            <li>
+              <a href={item.href} aria-current={isLinkActive(item.href) ? 'page' : undefined} class={isLinkActive(item.href) ? 'is-active' : ''}>
+                {item.label}
+              </a>
+            </li>
+          )
+        )
+      }
+    </ul>
+  </nav>
+</header>
+
+<script>
+  // --- Mobile hamburger menu (whole panel open/close) ---
+  const toggle = document.querySelector<HTMLButtonElement>('.menu-toggle');
+  const menu = document.getElementById('mobile-menu');
+
+  if (toggle && menu) {
+    const closeMenu = () => {
+      toggle.setAttribute('aria-expanded', 'false');
+      menu.hidden = true;
+      document.body.classList.remove('menu-open');
+    };
+
+    const openMenu = () => {
+      toggle.setAttribute('aria-expanded', 'true');
+      menu.hidden = false;
+      document.body.classList.add('menu-open');
+    };
+
+    toggle.addEventListener('click', () => {
+      const isOpen = toggle.getAttribute('aria-expanded') === 'true';
+      isOpen ? closeMenu() : openMenu();
+    });
+
+    // Only links (real navigation) close the whole menu. Group-trigger
+    // buttons are handled separately below and must never close it.
+    menu.addEventListener('click', (event) => {
+      if ((event.target as HTMLElement).closest('a')) closeMenu();
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && toggle.getAttribute('aria-expanded') === 'true') {
+        closeMenu();
+        toggle.focus();
+      }
+    });
+  }
+
+  // --- Mobile accordion: each group toggles independently, never navigates ---
+  document.querySelectorAll<HTMLButtonElement>('.mobile-group__trigger').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const panel = document.getElementById(btn.getAttribute('aria-controls') ?? '');
+      const isOpen = btn.getAttribute('aria-expanded') === 'true';
+      btn.setAttribute('aria-expanded', String(!isOpen));
+      if (panel) panel.hidden = isOpen;
+    });
+  });
+
+  // --- Desktop dropdowns: click-to-expand, one open at a time, never navigate ---
+  const desktopTriggers = Array.from(document.querySelectorAll<HTMLButtonElement>('.nav-group__trigger'));
+
+  const closeAllDropdowns = () => {
+    desktopTriggers.forEach((btn) => {
+      btn.setAttribute('aria-expanded', 'false');
+      const panel = document.getElementById(btn.getAttribute('aria-controls') ?? '');
+      if (panel) panel.hidden = true;
+    });
+  };
+
+  desktopTriggers.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const panel = document.getElementById(btn.getAttribute('aria-controls') ?? '');
+      const isOpen = btn.getAttribute('aria-expanded') === 'true';
+      closeAllDropdowns();
+      if (!isOpen && panel) {
+        btn.setAttribute('aria-expanded', 'true');
+        panel.hidden = false;
+      }
+    });
+  });
+
+  document.addEventListener('click', (event) => {
+    if (!(event.target as HTMLElement).closest('.nav-group')) closeAllDropdowns();
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+    const openTrigger = desktopTriggers.find((btn) => btn.getAttribute('aria-expanded') === 'true');
+    if (openTrigger) {
+      closeAllDropdowns();
+      openTrigger.focus();
+    }
+  });
+</script>
+
+<style>
+  .site-header {
+    background-color: var(--color-offwhite);
+    border-bottom: 1px solid var(--color-border);
+    position: sticky;
+    top: 0;
+    z-index: 40;
+  }
+
+  .site-header__inner {
+    max-width: var(--header-max-width);
+    margin-inline: auto;
+    padding-inline: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: var(--header-height);
+    gap: 1.5rem;
+  }
+
+  .wordmark {
+    flex-shrink: 0;
+    font-family: var(--font-heading);
+    font-size: 1.85625rem;
+    /* PT Serif only ships 400/700 (no 600) — 700 is the real face this
+       was already resolving to via browser fallback matching. */
+    font-weight: 700;
+    font-style: italic;
+    color: var(--color-ink);
+    text-decoration: none;
+    border-bottom: 2px solid var(--color-terracotta);
+    line-height: 1.1;
+    white-space: nowrap;
+  }
+
+  /* Direct-child combinator is required — a descendant selector here would
+     also match the nested .nav-dropdown <ul>, forcing display:flex on it
+     and defeating the [hidden] attribute that opens/closes the panel. */
+  .primary-nav > ul {
+    display: flex;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    gap: 1.5rem;
+  }
+
+  .primary-nav > ul > li {
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  /* Scoped to direct top-level links only — a bare ".primary-nav a" would
+     also match the nested .nav-dropdown links two levels down, relying on
+     source order (not specificity) to let .nav-dropdown a's rules win. */
+  .primary-nav > ul > li > a,
+  .nav-group__trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    min-height: var(--tap-target-min);
+    color: var(--color-ink);
+    font-weight: 700;
+    font-size: 1.2375rem;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .nav-group__trigger {
+    background: transparent;
+    border: none;
+    padding: 0;
+    font-family: inherit;
+    cursor: pointer;
+  }
+
+  .nav-group__chevron {
+    width: 1.1rem;
+    height: 1.1rem;
+    transition: transform 0.15s ease;
+  }
+
+  .nav-group__trigger[aria-expanded='true'] .nav-group__chevron {
+    transform: rotate(180deg);
+  }
+
+  .primary-nav > ul > li > a:hover,
+  .nav-group__trigger:hover {
+    color: var(--color-deep-green);
+  }
+
+  .primary-nav > ul > li > a.is-active,
+  .nav-group__trigger.is-active {
+    color: var(--color-deep-green);
+    font-weight: 800;
+    text-decoration: underline;
+    text-decoration-color: var(--color-terracotta);
+    text-decoration-thickness: 3px;
+    text-underline-offset: 0.3em;
+  }
+
+  .nav-dropdown:not([hidden]) {
+    display: block;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 0.5rem;
+    min-width: 14rem;
+    list-style: none;
+    padding: 0.4rem;
+    background-color: var(--color-offwhite);
+    border: 1px solid var(--color-border);
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 12px rgba(33, 31, 28, 0.1);
+  }
+
+  .nav-dropdown a {
+    display: flex;
+    align-items: center;
+    min-height: var(--tap-target-min);
+    padding: 0.3rem 0.75rem;
+    border-radius: 0.5rem;
+    color: var(--color-ink);
+    font-weight: 700;
+    font-size: 1.18125rem;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .nav-dropdown a:hover {
+    background-color: var(--color-warm-gray);
+    color: var(--color-deep-green);
+  }
+
+  .nav-dropdown a.is-active {
+    color: var(--color-deep-green);
+    text-decoration: underline;
+    text-decoration-color: var(--color-terracotta);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.25em;
+  }
+
+  .menu-toggle {
+    display: none;
+  }
+
+  .mobile-menu {
+    display: none;
+  }
+
+  /* Primary nav only appears once there's genuinely enough room for the
+     wordmark plus all four labels on one line without crowding — below
+     that, a tap-triggered hamburger menu is the navigation. */
+  @media (max-width: 63.99rem) {
+    .primary-nav {
+      display: none;
+    }
+
+    .menu-toggle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: var(--tap-target-min);
+      height: var(--tap-target-min);
+      flex-shrink: 0;
+      background: transparent;
+      border: none;
+      border-radius: var(--radius-md);
+      color: var(--color-ink);
+      cursor: pointer;
+    }
+
+    .menu-toggle:hover {
+      background-color: var(--color-warm-gray);
+    }
+
+    .menu-toggle__icon {
+      width: 1.75rem;
+      height: 1.75rem;
+    }
+
+    .menu-toggle[aria-expanded='false'] .icon-close {
+      display: none;
+    }
+
+    .menu-toggle[aria-expanded='true'] .icon-open {
+      display: none;
+    }
+
+    /* Full-bleed panel: anchored to .site-header (the sticky positioning
+       context), not the padded/centered inner wrapper, so it spans edge
+       to edge regardless of the header's own max-width. */
+    .mobile-menu:not([hidden]) {
+      display: block;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background-color: var(--color-offwhite);
+      border-bottom: 1px solid var(--color-border);
+      box-shadow: 0 4px 10px rgba(33, 31, 28, 0.08);
+    }
+
+    .mobile-menu > ul {
+      list-style: none;
+      margin: 0;
+      padding: 0.25rem 1.25rem 0.75rem;
+    }
+
+    .mobile-menu > ul > li {
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .mobile-menu > ul > li:last-child {
+      border-bottom: none;
+    }
+
+    .mobile-menu a,
+    .mobile-group__trigger {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      min-height: 3.25rem;
+      color: var(--color-ink);
+      font-weight: 700;
+      font-size: 1.29375rem;
+      text-decoration: none;
+    }
+
+    .mobile-group__trigger {
+      justify-content: space-between;
+      background: transparent;
+      border: none;
+      padding: 0;
+      font-family: inherit;
+      cursor: pointer;
+    }
+
+    .mobile-group__chevron {
+      width: 1.3rem;
+      height: 1.3rem;
+      flex-shrink: 0;
+      transition: transform 0.15s ease;
+    }
+
+    .mobile-group__trigger[aria-expanded='true'] .mobile-group__chevron {
+      transform: rotate(180deg);
+    }
+
+    .mobile-group__trigger.is-active {
+      color: var(--color-deep-green);
+    }
+
+    .mobile-accordion {
+      list-style: none;
+      margin: 0 0 0.5rem;
+      padding: 0;
+    }
+
+    .mobile-accordion li {
+      border-top: 1px solid var(--color-border);
+    }
+
+    .mobile-accordion a {
+      min-height: 3rem;
+      padding-left: 1rem;
+      font-size: 1.2375rem;
+    }
+
+    .mobile-menu a.is-active {
+      color: var(--color-deep-green);
+      font-weight: 800;
+      text-decoration: underline;
+      text-decoration-color: var(--color-terracotta);
+      text-decoration-thickness: 3px;
+      text-underline-offset: 0.25em;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .nav-group__chevron,
+    .mobile-group__chevron {
+      transition: none;
+    }
+  }
+</style>

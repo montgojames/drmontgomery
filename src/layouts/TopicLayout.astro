@@ -1,0 +1,122 @@
+---
+import BaseLayout from './BaseLayout.astro';
+
+interface Props {
+  groupLabel?: string;
+  title: string;
+  description?: string;
+  hasContent?: boolean;
+  placeholder?: string;
+}
+
+const {
+  groupLabel,
+  title,
+  description,
+  hasContent = false,
+  placeholder = 'This article is being written — check back soon.',
+} = Astro.props;
+---
+
+<BaseLayout title={title}>
+  <div class="container topic-page">
+    <div class="prose-column">
+      {groupLabel && <p class="kicker">{groupLabel}</p>}
+      <h1 data-pagefind-meta="title">{title}</h1>
+      {description && <p class="topic-page__lede">{description}</p>}
+    </div>
+
+    <slot name="figure" />
+
+    <div class="prose-column">
+      <hr class="accent-rule" />
+      <slot name="actions" />
+      {
+        hasContent ? (
+          <div class="topic-page__body">
+            <slot />
+          </div>
+        ) : (
+          <p class="topic-page__placeholder">{placeholder}</p>
+        )
+      }
+      <slot name="after-body" />
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .topic-page {
+    padding-block: 3rem 4rem;
+  }
+
+  /* Width/alignment for everything in here comes from the two
+     .prose-column wrappers above (see global.css) — nothing in this file
+     sets its own max-width or margin-inline:auto anymore. The figure slot
+     is the one thing that stays outside both wrappers, full width,
+     matching images/cards elsewhere on the site. */
+  .topic-page__lede,
+  .topic-page__placeholder {
+    color: var(--color-ink-soft);
+  }
+
+  .topic-page__placeholder {
+    font-style: italic;
+  }
+
+  /* Real article bodies are rendered Markdown, not authored template
+     markup, so Astro's scoping hash never lands on these elements —
+     :global() is required for any of this to actually match. */
+  .topic-page__body {
+    margin-top: 0.5rem;
+  }
+
+  .topic-page__body :global(p) {
+    margin-top: 0;
+    margin-bottom: 1.2em;
+    color: var(--color-ink);
+  }
+
+  .topic-page__body :global(h2) {
+    font-size: 1.5rem;
+    margin-top: 2rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .topic-page__body :global(h3) {
+    font-size: 1.2rem;
+    margin-top: 1.5rem;
+    margin-bottom: 0.6rem;
+  }
+
+  .topic-page__body :global(ul),
+  .topic-page__body :global(ol) {
+    margin-top: 0;
+    margin-bottom: 1.2em;
+    padding-left: 1.5rem;
+  }
+
+  .topic-page__body :global(li) {
+    margin-bottom: 0.5em;
+  }
+
+  .topic-page__body :global(li > ul),
+  .topic-page__body :global(li > ol) {
+    margin-top: 0.5em;
+    margin-bottom: 0;
+  }
+
+  .topic-page__body :global(a) {
+    text-decoration: underline;
+  }
+
+  .topic-page__body :global(hr) {
+    border: none;
+    border-top: 1px solid var(--color-border);
+    margin: 2rem 0;
+  }
+
+  .topic-page__body :global(strong) {
+    color: var(--color-ink);
+  }
+</style>

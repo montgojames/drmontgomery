@@ -1,0 +1,157 @@
+---
+import { Image } from 'astro:assets';
+import { BookSearch } from '@lucide/astro';
+import medicalConditionsPhoto from '../assets/images/medical-conditions.png';
+---
+
+<!-- Label + headline are locked, per content-migration/homepage-section-
+     headers.md. Card description is James's trim of Brett's own sentence
+     (see that file's note) — not fully verbatim, but his call. -->
+<section class="medical-conditions">
+  <div class="container medical-conditions__grid">
+    <div class="medical-conditions__photo-block">
+      <div class="medical-conditions__photo">
+        <Image
+          src={medicalConditionsPhoto}
+          alt="A sunlit desk with an open laptop, a stack of medical reference books, and a stethoscope."
+          width={1904}
+          height={2544}
+        />
+      </div>
+      <hr class="medical-conditions__photo-rule" />
+    </div>
+
+    <div class="medical-conditions__content">
+      <p class="kicker">Medical Conditions</p>
+      <h2>Look up a specific condition</h2>
+      <hr class="accent-rule" />
+
+      <a href="/medical-conditions/" class="tappable-card card-row medical-conditions__card">
+        <BookSearch class="topic-icon" stroke-width={1.75} />
+        <div class="topic-text">
+          <h3>Medical Conditions</h3>
+          <p>Articles on various medical conditions commonly encountered in the hospital.</p>
+        </div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<style>
+  /* Top padding only — see DuringYourStaySection.astro for why mobile
+     gets MORE than desktop's 4rem here, not just parity. The footer's own
+     margin-top provides the closing gap after this, the last section. */
+  .medical-conditions {
+    padding-top: 7rem;
+  }
+
+  /* Label must be literally larger (font-size) than the headline beside
+     it, at every width — not just closer in size. Set both as flat,
+     non-responsive values (not the vw-based global h2 clamp) so that
+     relationship can't invert at some viewport width. Both scaled ~50%
+     up again (1.95rem/1.725rem → 2.925rem/2.5875rem) — same ratio
+     between the two, just bigger overall. */
+  .kicker {
+    font-size: 2.19375rem;
+  }
+
+  /* See DuringYourStaySection.astro — deliberately tight, tighter than
+     the 5rem section-boundary padding above, so proximity signals "this
+     photo belongs with this heading," not "new section." */
+  .medical-conditions__grid {
+    display: grid;
+    gap: 1.25rem;
+  }
+
+  .medical-conditions__photo {
+    aspect-ratio: 16 / 10;
+    border-radius: 1.25rem;
+    overflow: hidden;
+    background-color: var(--color-warm-gray);
+  }
+
+  .medical-conditions__photo :global(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  /* Echoes the accent-rule under the heading, tying the photo block to the
+     rest of the section's terracotta accents. border:none resets the
+     browser's default <hr> border, which would otherwise mask the
+     background-color. */
+  .medical-conditions__photo-rule {
+    border: none;
+    width: 2.75rem;
+    height: 3px;
+    background-color: var(--color-terracotta);
+    border-radius: 2px;
+    margin: 0.85rem 0 0;
+  }
+
+  .medical-conditions__content h2 {
+    font-size: 1.940625rem;
+    margin-bottom: 0;
+  }
+
+  .accent-rule {
+    margin-bottom: 0.85rem;
+  }
+
+  /* No max-width here on purpose — this should size exactly like one card
+     in the other sections' lists (full content-column width, no cap).
+     "Not stretched to fill the whole width" refers to the whole section
+     (photo + content, like the old full-width banner), not this column. */
+  .medical-conditions__card {
+    margin-top: 1.25rem;
+  }
+
+  @media (min-width: 48rem) {
+    .medical-conditions {
+      padding-top: 6rem;
+    }
+
+    .medical-conditions__grid {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+      /* start, not center — see DuringYourStaySection.astro for why. */
+      align-items: start;
+      gap: 3rem;
+    }
+
+    .medical-conditions__photo {
+      aspect-ratio: 4 / 5;
+    }
+
+    /* Wider container (site-wide .container, see global.css) means more
+       room here too — scale the card up rather than just widening the
+       empty margins. Larger text also serves the elderly-audience sizing
+       guidance in CLAUDE.md. (Headline font-size itself is NOT bumped
+       here — it must stay below the kicker's 2.19375rem at every width,
+       see the base rule above.) Card text is +20% this round; padding
+       trimmed from 1.5rem 1.75rem so the bigger text doesn't grow the
+       card's overall footprint. */
+    .card-row {
+      gap: 1.3rem;
+      padding: 1.1rem 1.5rem;
+    }
+
+    .topic-icon {
+      width: 2.2rem;
+      height: 2.2rem;
+    }
+
+    .topic-text {
+      gap: 0.45rem;
+    }
+
+    .topic-text h3 {
+      font-size: 1.692rem;
+    }
+
+    .topic-text p {
+      font-size: 1.422rem;
+      line-height: 1.5;
+    }
+  }
+</style>

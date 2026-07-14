@@ -1,0 +1,111 @@
+/* Print stylesheet — applies site-wide (any page can be Ctrl+P'd), though
+   the visible "Print this article" button only appears on article pages;
+   see ArticleActions.astro and TopicLayout's "actions" slot. */
+@media print {
+  @page {
+    margin: 2cm 1.5cm;
+  }
+
+  /* Screen-only chrome and interactive affordances that mean nothing on
+     paper: nav, footer, the print/share buttons themselves, the homepage's
+     hero and section card grids (in case someone prints the homepage
+     directly), and the Medical Conditions index page's external-link
+     icons/badges. */
+  .site-header,
+  .site-footer,
+  .skip-link,
+  .article-actions,
+  .hero,
+  .during-stay,
+  .decisions-section,
+  .medical-conditions,
+  .tappable-card,
+  .medical-conditions-page__tag,
+  .medical-conditions-page__external-icon,
+  .medical-conditions-page__sr-only {
+    display: none !important;
+  }
+
+  /* Cream background and terracotta accents are a screen-only choice —
+     plain black text on white for paper, skipping anything that wastes
+     ink or may not render on a home printer. */
+  html,
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  body {
+    font-size: 11pt;
+    line-height: 1.4;
+  }
+
+  .topic-page {
+    padding-block: 0 !important;
+  }
+
+  /* Keeps the serif/sans distinction from the on-screen type (font-family
+     is untouched here), just resized down from the large, low-vision/
+     mobile-friendly on-screen scale to something print-appropriate. */
+  h1,
+  h2,
+  h3,
+  h4 {
+    color: #000 !important;
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  h1 {
+    font-size: 20pt;
+  }
+
+  h2 {
+    font-size: 15pt;
+  }
+
+  h3 {
+    font-size: 12.5pt;
+  }
+
+  p,
+  li {
+    orphans: 3;
+    widows: 3;
+  }
+
+  /* Section label above the title (e.g. "During Your Stay") — see
+     TopicLayout.astro. Forced to black along with everything else, so a
+     printed page is identifiable on its own without the on-screen palette. */
+  .kicker {
+    color: #000 !important;
+  }
+
+  .accent-rule {
+    background-color: #000 !important;
+  }
+
+  a {
+    color: #000 !important;
+    text-decoration: underline;
+  }
+
+  /* Internal cross-references (e.g. "see Discharge Planning") aren't
+     clickable on paper, so print the destination after the link text.
+     No article currently links to another internal page — every citation
+     in the content today is external — so this has no visible effect yet,
+     but keeps a printed sheet self-sufficient once that changes. External
+     citations are the common case in body copy already; printing every
+     one of those URLs too would bury the article in citation text, so
+     only internal links get this treatment. */
+  .topic-page__body a[href^='/']::after {
+    content: ' (drmontgomery.org' attr(href) ')';
+    font-size: 0.85em;
+    color: #333;
+  }
+}

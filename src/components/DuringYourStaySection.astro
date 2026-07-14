@@ -1,0 +1,196 @@
+---
+import { Image } from 'astro:assets';
+import { Stethoscope, Users, TrendingUp, Moon } from '@lucide/astro';
+import { duringYourStayGroup, topicHref } from '../data/navigation';
+import duringYourStayPhoto from '../assets/images/during-your-stay.jpg';
+
+const topicIcons: Record<string, typeof Stethoscope> = {
+  'hospitalist-defined': Stethoscope,
+  'your-healthcare-team': Users,
+  mobility: TrendingUp,
+  sleep: Moon,
+};
+
+const topics = duringYourStayGroup.topics.map((topic) => ({
+  ...topic,
+  href: topicHref(duringYourStayGroup, topic),
+  icon: topicIcons[topic.slug],
+}));
+---
+
+<section class="during-stay">
+  <div class="container during-stay__grid">
+    <div class="during-stay__photo-block">
+      <div class="during-stay__photo">
+        <Image
+          src={duringYourStayPhoto}
+          alt="A nurse talking with a patient and her visiting family in a sunlit hospital room."
+          width={690}
+          height={832}
+        />
+      </div>
+      <hr class="during-stay__photo-rule" />
+    </div>
+
+    <div class="during-stay__content">
+      <p class="kicker">During Your Stay</p>
+      <h2>What to expect while you're here</h2>
+      <hr class="accent-rule" />
+
+      <ul class="topic-list">
+        {
+          topics.map((topic) => {
+            const IconComp = topic.icon;
+            return (
+              <li>
+                <a href={topic.href} class="tappable-card card-row">
+                  <IconComp class="topic-icon" stroke-width={1.75} />
+                  <div class="topic-text">
+                    <h3>{topic.label}</h3>
+                    <p>{topic.description}</p>
+                  </div>
+                </a>
+              </li>
+            );
+          })
+        }
+      </ul>
+    </div>
+  </div>
+</section>
+
+<style>
+  /* Top padding only — bottom padding here would stack with the next
+     section's own top padding at their shared boundary, doubling the gap
+     instead of collapsing cleanly. Mobile gets MORE than desktop's 4rem
+     here, not just parity — on a narrow single-column stack, the section
+     boundary needs to read as more clearly separated than the desktop
+     rhythm requires, per explicit feedback that 4rem still felt cramped
+     on mobile. */
+  .during-stay {
+    padding-top: 7rem;
+  }
+
+  /* Label must be literally larger (font-size) than the headline beside
+     it, at every width — not just closer in size. Set both as flat,
+     non-responsive values (not the vw-based global h2 clamp) so that
+     relationship can't invert at some viewport width. Both scaled ~50%
+     up again (1.95rem/1.725rem → 2.925rem/2.5875rem) — same ratio
+     between the two, just bigger overall. */
+  .kicker {
+    font-size: 2.19375rem;
+  }
+
+  /* On mobile this is a single-column stack (photo, then content) — this
+     gap separates the photo block from ITS OWN heading below it, and is
+     deliberately tight (tighter than the 5rem section-boundary padding
+     above) so proximity does the work: small gap reads as "these belong
+     together," the much larger gap above reads as "new section." */
+  .during-stay__grid {
+    display: grid;
+    gap: 1.25rem;
+  }
+
+  .during-stay__photo {
+    aspect-ratio: 16 / 10;
+    border-radius: 1.25rem;
+    overflow: hidden;
+    background-color: var(--color-warm-gray);
+  }
+
+  .during-stay__photo :global(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  /* Echoes the accent-rule under the heading, tying the photo to the rest
+     of the section's terracotta accents. border:none resets the browser's
+     default <hr> border, which would otherwise mask the background-color. */
+  .during-stay__photo-rule {
+    border: none;
+    width: 2.75rem;
+    height: 3px;
+    background-color: var(--color-terracotta);
+    border-radius: 2px;
+    margin: 0.85rem 0 0;
+  }
+
+  .during-stay__content h2 {
+    font-size: 1.940625rem;
+    margin-bottom: 0;
+  }
+
+  .accent-rule {
+    margin-bottom: 0.85rem;
+  }
+
+  .topic-list {
+    list-style: none;
+    margin: 1.25rem 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+
+  @media (min-width: 48rem) {
+    .during-stay {
+      padding-top: 6rem;
+    }
+
+    .during-stay__grid {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+      /* start, not center — the content column (kicker/heading/cards) is
+         taller than the photo and necessarily sets the row height (a grid
+         row can't be shorter than its tallest item without clipping it).
+         Centering the shorter photo within that row splits the leftover
+         space above and below it, which read as an oversized, accidental
+         gap before the next section. Top-aligning puts the photo flush
+         with the heading like a normal editorial layout, and all the
+         leftover space collects in one place below it instead. */
+      align-items: start;
+      gap: 3rem;
+    }
+
+    .during-stay__photo {
+      aspect-ratio: 4 / 5;
+    }
+
+    /* Wider container (site-wide .container, see global.css) means more
+       room here too — scale cards and card text up rather than just
+       widening the empty margins. Larger text also serves the
+       elderly-audience sizing guidance in CLAUDE.md. (Headline font-size
+       itself is NOT bumped here — it must stay below the kicker's
+       2.19375rem at every width, see the base rule above.) Card text is
+       +20% this round; padding trimmed from 1.5rem 1.75rem so the bigger
+       text doesn't grow the card's overall footprint. */
+    .topic-list {
+      gap: 1rem;
+    }
+
+    .card-row {
+      gap: 1.3rem;
+      padding: 1.1rem 1.5rem;
+    }
+
+    .topic-icon {
+      width: 2.2rem;
+      height: 2.2rem;
+    }
+
+    .topic-text {
+      gap: 0.45rem;
+    }
+
+    .topic-text h3 {
+      font-size: 1.692rem;
+    }
+
+    .topic-text p {
+      font-size: 1.422rem;
+      line-height: 1.5;
+    }
+  }
+</style>

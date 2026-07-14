@@ -1,0 +1,201 @@
+---
+import { testimonials } from '../data/testimonials';
+---
+
+<div class="prose-column testimonials-section">
+  <h2>What patients say</h2>
+
+  {
+    testimonials.length > 0 ? (
+      <ul class="testimonials-list">
+        {testimonials.map((t) => (
+          <li class="testimonial-card">
+            <p class="testimonial-card__quote">"{t.quote}"</p>
+            <p class="testimonial-card__attribution">—{t.attribution}</p>
+          </li>
+        ))}
+      </ul>
+    ) : (
+      <p class="testimonials-section__empty">No testimonials have been shared yet — be the first.</p>
+    )
+  }
+
+  <div class="disclosure">
+    <button
+      type="button"
+      id="testimonial-toggle"
+      class="btn btn-secondary"
+      aria-expanded="false"
+      aria-controls="testimonial-panel"
+    >
+      Leave a testimonial
+    </button>
+
+    <div id="testimonial-panel" class="disclosure__panel" hidden>
+      <form id="testimonial-form" novalidate>
+        <div class="disclosure-form__field">
+          <label for="testimonial-name">
+            Display name <span class="disclosure-form__hint">(optional)</span>
+          </label>
+          <input
+            type="text"
+            id="testimonial-name"
+            name="name"
+            placeholder={'First name last initial, e.g. "Sarah M." — or leave blank to stay anonymous.'}
+            autocomplete="off"
+          />
+        </div>
+
+        <div class="disclosure-form__field">
+          <label for="testimonial-comment">
+            Your comment <span class="disclosure-form__hint">(required)</span>
+          </label>
+          <textarea id="testimonial-comment" name="comment" rows="4" required></textarea>
+        </div>
+
+        <div class="disclosure-form__field">
+          <label for="testimonial-email">
+            Email <span class="disclosure-form__hint">(optional, private — never published)</span>
+          </label>
+          <input type="email" id="testimonial-email" name="email" autocomplete="email" />
+        </div>
+
+        <!-- Honeypot: same pattern as Suggest-a-topic — invisible to real
+             visitors (CSS) and screen readers (aria-hidden + tabindex="-1"),
+             present for basic bots that fill every field blindly. -->
+        <div class="disclosure-form__honeypot" aria-hidden="true">
+          <label for="testimonial-website">Leave this field blank</label>
+          <input type="text" id="testimonial-website" name="website" tabindex="-1" autocomplete="off" />
+        </div>
+
+        <p class="testimonial-form__disclaimer">
+          <strong>Before you submit:</strong> This is one-way — Dr. Montgomery can't respond to your
+          comment here. Everything submitted is reviewed only after he's off-service, so nothing you
+          share affects your care while you're in the hospital.
+        </p>
+
+        <p id="testimonial-error" class="disclosure-form__error" role="alert" hidden></p>
+
+        <button type="submit" class="btn btn-primary">Submit testimonial</button>
+      </form>
+
+      <p id="testimonial-confirmation" class="disclosure-confirmation" role="status" hidden>
+        Thank you — this will be reviewed by Dr. Montgomery.
+      </p>
+    </div>
+  </div>
+</div>
+
+<script>
+  const toggle = document.getElementById('testimonial-toggle');
+  const panel = document.getElementById('testimonial-panel');
+  const form = document.getElementById('testimonial-form') as HTMLFormElement | null;
+  const errorEl = document.getElementById('testimonial-error');
+  const confirmationEl = document.getElementById('testimonial-confirmation');
+
+  toggle?.addEventListener('click', () => {
+    const isOpen = toggle.getAttribute('aria-expanded') === 'true';
+    toggle.setAttribute('aria-expanded', String(!isOpen));
+    if (panel) panel.hidden = isOpen;
+    if (!isOpen) {
+      document.getElementById('testimonial-comment')?.focus();
+    }
+  });
+
+  form?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (!errorEl || !confirmationEl) return;
+    errorEl.hidden = true;
+
+    const nameField = form.elements.namedItem('name') as HTMLInputElement;
+    const commentField = form.elements.namedItem('comment') as HTMLTextAreaElement;
+    const emailField = form.elements.namedItem('email') as HTMLInputElement;
+    const websiteField = form.elements.namedItem('website') as HTMLInputElement;
+    const comment = commentField.value.trim();
+
+    if (!comment) {
+      errorEl.textContent = 'Please enter a comment before sending.';
+      errorEl.hidden = false;
+      commentField.focus();
+      return;
+    }
+
+    const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+    submitBtn.disabled = true;
+
+    try {
+      const response = await fetch('/api/testimonial', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: nameField.value.trim(),
+          comment,
+          email: emailField.value.trim(),
+          website: websiteField.value,
+        }),
+      });
+
+      if (!response.ok) throw new Error('Request failed');
+
+      form.hidden = true;
+      confirmationEl.hidden = false;
+    } catch {
+      errorEl.textContent = 'Something went wrong sending that — please try again.';
+      errorEl.hidden = false;
+      submitBtn.disabled = false;
+    }
+  });
+</script>
+
+<style>
+  /* Width/centering comes from the shared .prose-column class (global.css)
+     also applied to this element — this file only adds the extra
+     top spacing before this section. Longhand margin-top only, never the
+     shorthand, or it would reset prose-column's margin-inline:auto. */
+  .testimonials-section {
+    margin-top: 3rem;
+  }
+
+  .testimonials-list {
+    list-style: none;
+    margin: 1.25rem 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .testimonial-card {
+    background-color: var(--color-offwhite);
+    border: 1px solid var(--color-border);
+    border-radius: 0.75rem;
+    padding: 1.25rem 1.5rem;
+  }
+
+  .testimonial-card__quote {
+    margin: 0 0 0.5rem;
+    font-style: italic;
+  }
+
+  .testimonial-card__attribution {
+    margin: 0;
+    font-weight: 700;
+    color: var(--color-ink-soft);
+  }
+
+  .testimonials-section__empty {
+    color: var(--color-ink-soft);
+    font-style: italic;
+  }
+
+  /* Same warm-gray box device as .disclosure-form__error — the disclaimer
+     needs to read as important without introducing an off-palette
+     "warning" color, and sits directly above the submit button per
+     explicit request (not buried in a footer or separate page). */
+  .testimonial-form__disclaimer {
+    background-color: var(--color-warm-gray);
+    border-radius: var(--radius-md);
+    padding: 1rem 1.25rem;
+    margin: 0 0 1.25rem;
+  }
+</style>

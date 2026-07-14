@@ -1,0 +1,58 @@
+---
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import '../styles/global.css';
+import '../styles/print.css';
+
+interface Props {
+  title: string;
+  description?: string;
+  /** Excludes this page's content from the Pagefind search index (see /search).
+   * Used on the homepage, whose card teasers just duplicate the real
+   * article pages that are already indexed, so including it would only
+   * produce noisy duplicate search results. */
+  pagefindIgnore?: boolean;
+}
+
+const {
+  title,
+  description = 'Patient and family education from Dr. Montgomery.',
+  pagefindIgnore = false,
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="description" content={description} />
+    <title>{title} · Dr. Montgomery</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=PT+Serif:ital,wght@0,400;0,700;1,400;1,700&family=Atkinson+Hyperlegible:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+
+    <Header />
+
+    <!-- Pagefind's own doc says it plainly: once ANY page on the site has
+         data-pagefind-body, pages with NO element carrying that tag are
+         skipped entirely. Omitting the attribute here (rather than adding
+         a separate data-pagefind-ignore) is that documented exclusion
+         mechanism, not a workaround — data-pagefind-ignore alongside a
+         nested data-pagefind-body turned out not to suppress indexing at
+         all when tested. -->
+    <main id="main-content" data-pagefind-body={pagefindIgnore ? undefined : true}>
+      <slot />
+    </main>
+
+    <Footer />
+  </body>
+</html>

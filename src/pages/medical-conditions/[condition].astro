@@ -1,0 +1,26 @@
+---
+import { getCollection, render } from 'astro:content';
+import TopicLayout from '../../layouts/TopicLayout.astro';
+import ArticleActions from '../../components/ArticleActions.astro';
+
+export async function getStaticPaths() {
+  const entries = await getCollection('medicalConditions');
+
+  return entries.map((entry) => ({
+    params: { condition: entry.id },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+
+const hasContent = !entry.data.draft;
+const Content = hasContent ? (await render(entry)).Content : undefined;
+---
+
+<TopicLayout groupLabel="Medical Conditions" title={entry.data.title} hasContent={hasContent}>
+  <Fragment slot="actions">
+    <ArticleActions title={entry.data.title} />
+  </Fragment>
+  {Content && <Content />}
+</TopicLayout>

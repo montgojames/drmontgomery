@@ -1,0 +1,243 @@
+---
+import { ExternalLink } from '@lucide/astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { medicalConditionsTopics } from '../data/medicalConditionsTopics';
+---
+
+<BaseLayout title="Medical Conditions">
+  <div class="container medical-conditions-page">
+    <div class="prose-column">
+      <h1 data-pagefind-meta="title">Medical Conditions</h1>
+      <p class="medical-conditions-page__teaser">
+        In this section I provide education on various medical conditions commonly encountered in the
+        hospital. It's not comprehensive. I've written it similar to how I explain things to patients.
+        There are links to credible websites to provide more in-depth information. As always, I hope it
+        spurs communication between yourself and the provider.
+      </p>
+      <hr class="accent-rule" />
+      <p class="medical-conditions-page__intro">
+        I continually add to and update this list as time allows. Feel free to ask me about anything, and
+        I'll do my best to answer.
+      </p>
+
+      <ul class="medical-conditions-page__list">
+        {
+          medicalConditionsTopics.map((item) => (
+            <li>
+              {item.status === 'internal' ? (
+                <a href={`/medical-conditions/${item.slug}/`}>{item.topic}</a>
+              ) : item.externalUrl ? (
+                <a
+                  href={item.externalUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="medical-conditions-page__external"
+                >
+                  {item.topic}
+                  <ExternalLink class="medical-conditions-page__external-icon" stroke-width={2} aria-hidden="true" />
+                  <span class="medical-conditions-page__sr-only">(opens in a new tab)</span>
+                </a>
+              ) : (
+                <span class="medical-conditions-page__unavailable">
+                  {item.topic}
+                  <span class="medical-conditions-page__tag">External resource — coming soon</span>
+                </span>
+              )}
+            </li>
+          ))
+        }
+      </ul>
+
+      <div class="disclosure">
+        <button
+          type="button"
+          id="suggest-topic-toggle"
+          class="btn btn-secondary"
+          aria-expanded="false"
+          aria-controls="suggest-topic-panel"
+        >
+          Suggest a topic
+        </button>
+
+        <div id="suggest-topic-panel" class="disclosure__panel" hidden>
+          <form id="suggest-topic-form" novalidate>
+            <div class="disclosure-form__field">
+              <label for="suggest-topic-input">
+                What topic would you like covered? <span class="disclosure-form__hint">(required)</span>
+              </label>
+              <textarea id="suggest-topic-input" name="topic" rows="3" required></textarea>
+            </div>
+
+            <div class="disclosure-form__field">
+              <label for="suggest-topic-email">
+                Email <span class="disclosure-form__hint">(optional)</span>
+              </label>
+              <input type="email" id="suggest-topic-email" name="email" autocomplete="email" />
+            </div>
+
+            <!-- Honeypot: invisible to real visitors (CSS below) and to screen
+                 readers (aria-hidden + tabindex="-1"), but present as a real,
+                 fillable field for basic bots that populate every input
+                 blindly. A filled honeypot means the submission is silently
+                 dropped server-side (see functions/api/suggest-topic.ts). -->
+            <div class="disclosure-form__honeypot" aria-hidden="true">
+              <label for="suggest-topic-website">Leave this field blank</label>
+              <input type="text" id="suggest-topic-website" name="website" tabindex="-1" autocomplete="off" />
+            </div>
+
+            <p id="suggest-topic-error" class="disclosure-form__error" role="alert" hidden></p>
+
+            <button type="submit" class="btn btn-primary">Send suggestion</button>
+          </form>
+
+          <p id="suggest-topic-confirmation" class="disclosure-confirmation" role="status" hidden>
+            Thanks — this has been added to Dr. Montgomery's list.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  const toggle = document.getElementById('suggest-topic-toggle');
+  const panel = document.getElementById('suggest-topic-panel');
+  const form = document.getElementById('suggest-topic-form') as HTMLFormElement | null;
+  const errorEl = document.getElementById('suggest-topic-error');
+  const confirmationEl = document.getElementById('suggest-topic-confirmation');
+
+  toggle?.addEventListener('click', () => {
+    const isOpen = toggle.getAttribute('aria-expanded') === 'true';
+    toggle.setAttribute('aria-expanded', String(!isOpen));
+    if (panel) panel.hidden = isOpen;
+    if (!isOpen) {
+      document.getElementById('suggest-topic-input')?.focus();
+    }
+  });
+
+  form?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (!errorEl || !confirmationEl) return;
+    errorEl.hidden = true;
+
+    const topicField = form.elements.namedItem('topic') as HTMLTextAreaElement;
+    const emailField = form.elements.namedItem('email') as HTMLInputElement;
+    const websiteField = form.elements.namedItem('website') as HTMLInputElement;
+    const topic = topicField.value.trim();
+
+    if (!topic) {
+      errorEl.textContent = 'Please enter a topic before sending.';
+      errorEl.hidden = false;
+      topicField.focus();
+      return;
+    }
+
+    const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+    submitBtn.disabled = true;
+
+    try {
+      const response = await fetch('/api/suggest-topic', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          topic,
+          email: emailField.value.trim(),
+          website: websiteField.value,
+        }),
+      });
+
+      if (!response.ok) throw new Error('Request failed');
+
+      form.hidden = true;
+      confirmationEl.hidden = false;
+    } catch {
+      errorEl.textContent = 'Something went wrong sending that — please try again.';
+      errorEl.hidden = false;
+      submitBtn.disabled = false;
+    }
+  });
+</script>
+
+<style>
+  .medical-conditions-page {
+    padding-block: 3rem 4rem;
+  }
+
+  /* Title, paragraphs, divider, list, and the suggest-a-topic disclosure
+     all get their width/alignment from the single .prose-column wrapper
+     around them in the markup above (see global.css) — nothing here sets
+     its own max-width or margin-inline:auto anymore. */
+  .medical-conditions-page__teaser,
+  .medical-conditions-page__intro {
+    color: var(--color-ink-soft);
+  }
+
+  .medical-conditions-page__list {
+    list-style: none;
+    margin-top: 1.5rem;
+    padding: 0;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .medical-conditions-page__list li {
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  /* Internal links: real, clickable articles — styled like any other body
+     link on the site (deep green, underlined). Generous tap target. */
+  .medical-conditions-page__list a {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: var(--tap-target-min);
+    padding: 0.9rem 0.25rem;
+    font-weight: 700;
+  }
+
+  /* External links: same tap target and weight as internal, but the icon
+     is the "you're leaving the site" signal — deliberately terracotta
+     (accent-only color, never used for the text itself) so it reads as a
+     marker, not a second color of link text. */
+  .medical-conditions-page__external-icon {
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+    color: var(--color-terracotta);
+  }
+
+  .medical-conditions-page__sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* Not-yet-available topics deliberately do NOT look clickable — plain
+     ink-soft text, no underline — since they have nowhere to go yet. */
+  .medical-conditions-page__unavailable {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+    min-height: var(--tap-target-min);
+    padding: 0.9rem 0.25rem;
+    color: var(--color-ink-soft);
+  }
+
+  /* Base .medical-conditions-page__tag styling lives in global.css now —
+     it's the site's one shared "external resource" badge, reused as-is on
+     the Search page, not redefined per page. This rule just adds the
+     extra spacing specific to this page's list layout. */
+  .medical-conditions-page__list a .medical-conditions-page__tag {
+    margin-left: 0.6rem;
+  }
+
+  /* Suggest-a-topic's field/honeypot/error/confirmation styling now lives
+     in global.css as the shared .disclosure* classes (see
+     TestimonialsSection.astro for the second use of the same pattern). */
+</style>

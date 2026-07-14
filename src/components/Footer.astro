@@ -1,0 +1,40 @@
+---
+const year = new Date().getFullYear();
+---
+
+<footer class="site-footer">
+  <div class="container">
+    <p class="disclaimer">This is education, not medical advice &middot; If this is an emergency, call 911.</p>
+    <p class="copyright">&copy; {year} Dr. Montgomery. All rights reserved.</p>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    background-color: var(--color-deep-green);
+    color: var(--color-offwhite);
+    margin-top: 4rem;
+  }
+
+  .site-footer .container {
+    padding-block: 2rem;
+  }
+
+  /* Single line by explicit request (overrides the prior two-stacked-line
+     decision — see CLAUDE.md). Both required sentences are still present
+     verbatim, just joined with a middle dot instead of stacked. Regular
+     weight and the same muted tone as the copyright line below — quiet
+     legal text, not a warning banner competing with real headings
+     elsewhere. */
+  .disclaimer {
+    font-weight: 400;
+    color: var(--color-warm-gray);
+    margin: 0;
+  }
+
+  .copyright {
+    margin: 0.75rem 0 0;
+    font-size: 0.85rem;
+    color: var(--color-warm-gray);
+  }
+</style>

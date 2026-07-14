@@ -1,0 +1,67 @@
+---
+import { getCollection, render } from 'astro:content';
+import { Image } from 'astro:assets';
+import TopicLayout from '../layouts/TopicLayout.astro';
+import TestimonialsSection from '../components/TestimonialsSection.astro';
+import brettPhoto from '../assets/images/brett-montgomery.jpeg';
+
+const [entry] = await getCollection('about');
+const { Content } = await render(entry);
+---
+
+<TopicLayout title={entry.data.title} hasContent={true}>
+  <!-- No wide "figure" slot here on purpose — a standalone wide photo was
+       exactly the bug (sitting at the old wide edge, disconnected from the
+       now-correctly-aligned title/body, with an orphaned empty gap beside
+       it). Reusing the homepage hero's pattern instead: a small
+       rounded-rectangle photo paired with a short attribution line, placed
+       inside .prose-column (via .topic-page__body, since it's the first
+       thing in the default slot) so it's aligned with everything else,
+       not floating separately. -->
+  <div class="about-byline">
+    <Image
+      src={brettPhoto}
+      alt="Dr. Brett Montgomery, wearing a white coat over a striped collared shirt, smiling."
+      width={480}
+      height={535}
+      class="about-byline__photo"
+    />
+    <p class="about-byline__caption">—Brett Montgomery, MD</p>
+  </div>
+  <Content />
+  <TestimonialsSection slot="after-body" />
+</TopicLayout>
+
+<style>
+  /* Same rounded-rectangle treatment (shape, radius, aspect-ratio) as the
+     homepage hero's small byline photo, but sized close to the original
+     standalone About photo (was max-width: 13rem) rather than the hero's
+     own tiny mobile-byline size — that photo is a minor secondary
+     element there, but this is the primary portrait on an About page, and
+     shrinking it to icon-size read as broken/orphaned rather than
+     intentional. Paired with a short caption line, not the long opening
+     bio paragraph — pairing a photo with a whole paragraph is what caused
+     the hero's own wrapping bug earlier; short text only. */
+  .about-byline {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+  }
+
+  .about-byline__photo {
+    width: auto;
+    height: 14.5rem;
+    aspect-ratio: 400 / 446;
+    object-fit: cover;
+    border-radius: 1.25rem;
+    display: block;
+    flex-shrink: 0;
+  }
+
+  .about-byline__caption {
+    margin: 0;
+    font-weight: 700;
+    color: var(--color-ink-soft);
+  }
+</style>

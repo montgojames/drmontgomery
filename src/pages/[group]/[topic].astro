@@ -1,0 +1,52 @@
+---
+import { getCollection, render } from 'astro:content';
+import TopicLayout from '../../layouts/TopicLayout.astro';
+import ArticleActions from '../../components/ArticleActions.astro';
+import { navGroups } from '../../data/navigation';
+
+export async function getStaticPaths() {
+  // Maps a nav group's URL slug (locked in navigation.ts / CLAUDE.md) to the
+  // content collection that holds its articles. Declared inside
+  // getStaticPaths — Astro extracts this function into its own build chunk,
+  // and a module-scope const referenced only from in here doesn't reliably
+  // get pulled along with it.
+  const entriesByGroupSlug = {
+    'during-your-stay': await getCollection('duringYourStay'),
+    'decisions-and-next-steps': await getCollection('decisionsNextSteps'),
+  } as const;
+
+  return navGroups.flatMap((group) => {
+    const entries = entriesByGroupSlug[group.slug as keyof typeof entriesByGroupSlug] ?? [];
+
+    return group.topics.map((topic) => {
+      const entry = entries.find((e) => e.id === topic.slug);
+      return {
+        params: { group: group.slug, topic: topic.slug },
+        props: {
+          groupLabel: group.label,
+          title: topic.label,
+          // The subhead under the H1 is Brett's own teaser line from the
+          // article's frontmatter, not the nav card's description (that's
+          // separate, homepage-card-only copy — see navigation.ts).
+          description: entry?.data.teaser || undefined,
+          entry,
+        },
+      };
+    });
+  });
+}
+
+const { groupLabel, title, description, entry } = Astro.props;
+
+// draft:true (advance-directives.md right now) intentionally falls back to
+// the "being written" placeholder, same as a topic with no entry at all.
+const hasContent = Boolean(entry && !entry.data.draft);
+const Content = hasContent ? (await render(entry!)).Content : undefined;
+---
+
+<TopicLayout groupLabel={groupLabel} title={title} description={description} hasContent={hasContent}>
+  <Fragment slot="actions">
+    <ArticleActions title={title} />
+  </Fragment>
+  {Content && <Content />}
+</TopicLayout>

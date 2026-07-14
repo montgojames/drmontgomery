@@ -1,0 +1,339 @@
+---
+import { Search as SearchIcon, ExternalLink } from '@lucide/astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { medicalConditionsTopics } from '../data/medicalConditionsTopics';
+
+// Pagefind only indexes real pages, so it can't find these — they're just a
+// link out to Mayo Clinic/Cleveland Clinic/NIH, not content hosted here (see
+// the Medical Conditions index page for the same internal/external split).
+// Matched by simple substring against the topic name at search time instead.
+const externalTopics = medicalConditionsTopics
+  .filter((item) => item.status === 'external')
+  .map((item) => ({ topic: item.topic, url: item.externalUrl }));
+---
+
+<BaseLayout title="Search" pagefindIgnore>
+  <div class="container search-page">
+    <div class="prose-column">
+      <h1>Search</h1>
+      <p class="search-page__lede">Find articles across the whole site.</p>
+
+      <form id="search-form" class="search-form" role="search" action="/search/" method="get">
+        <label for="search-input" class="search-form__label">Search the site</label>
+        <div class="search-form__row">
+          <input
+            type="search"
+            id="search-input"
+            name="q"
+            class="search-form__input"
+            placeholder="e.g. mobility, discharge planning, diabetes"
+            autocomplete="off"
+          />
+          <button type="submit" class="btn btn-primary search-form__button">
+            <SearchIcon class="btn-icon" stroke-width={1.75} aria-hidden="true" />
+            Search
+          </button>
+        </div>
+      </form>
+
+      <p id="search-status" class="search-status" role="status" aria-live="polite"></p>
+      <ul id="search-results" class="search-results"></ul>
+    </div>
+  </div>
+
+  <!-- Cloned once per external-link result below, so the icon is the exact
+       same asset/markup used on the Medical Conditions index page, not a
+       hand-rolled duplicate. -->
+  <template id="external-icon-template">
+    <ExternalLink class="search-result__external-icon" stroke-width={2} aria-hidden="true" />
+  </template>
+</BaseLayout>
+
+<script define:vars={{ externalTopics }}>
+  const form = document.getElementById('search-form');
+  const input = document.getElementById('search-input');
+  const statusEl = document.getElementById('search-status');
+  const resultsEl = document.getElementById('search-results');
+  const iconTemplate = document.getElementById('external-icon-template');
+
+  let pagefind;
+  async function getPagefind() {
+    if (!pagefind) {
+      // /pagefind/pagefind.js is a static asset generated at build time by
+      // the Pagefind CLI (see package.json's build script), not a package
+      // Vite can resolve/bundle ahead of time — @vite-ignore stops Vite from
+      // trying to statically analyze this specifier.
+      pagefind = await import(/* @vite-ignore */ '/pagefind/pagefind.js');
+      await pagefind.init();
+    }
+    return pagefind;
+  }
+
+  function sectionLabel(url) {
+    if (url.startsWith('/during-your-stay/')) return 'During Your Stay';
+    if (url.startsWith('/decisions-and-next-steps/')) return 'Decisions & Next Steps';
+    if (url.startsWith('/medical-conditions/')) return 'Medical Conditions';
+    if (url.startsWith('/about/')) return 'About';
+    return '';
+  }
+
+  function renderResult({ href, title, excerptHtml, section, external }) {
+    const li = document.createElement('li');
+    const a = document.createElement('a');
+    a.href = href;
+    a.className = 'tappable-card card-row search-result';
+    if (external) {
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+    }
+
+    const textWrap = document.createElement('div');
+    textWrap.className = 'topic-text';
+
+    const h3 = document.createElement('h3');
+    h3.textContent = title;
+    if (external) {
+      h3.appendChild(iconTemplate.content.cloneNode(true));
+      const badge = document.createElement('span');
+      badge.className = 'medical-conditions-page__tag search-result__badge';
+      badge.textContent = 'External resource — opens in a new tab';
+      h3.appendChild(badge);
+    }
+    textWrap.appendChild(h3);
+
+    if (section) {
+      const sectionEl = document.createElement('p');
+      sectionEl.className = 'search-result__section';
+      sectionEl.textContent = section;
+      textWrap.appendChild(sectionEl);
+    }
+
+    if (excerptHtml) {
+      const p = document.createElement('p');
+      p.innerHTML = excerptHtml;
+      textWrap.appendChild(p);
+    }
+
+    a.appendChild(textWrap);
+    li.appendChild(a);
+    resultsEl.appendChild(li);
+  }
+
+  function renderEmptyState(query) {
+    const li = document.createElement('li');
+    li.className = 'search-empty';
+    const p = document.createElement('p');
+    p.append(
+      `No results for “${query}”. Try a different word, or `,
+      Object.assign(document.createElement('a'), {
+        href: '/medical-conditions/',
+        textContent: 'browse Medical Conditions directly',
+      }),
+      '.'
+    );
+    li.appendChild(p);
+    resultsEl.appendChild(li);
+  }
+
+  async function runSearch(query) {
+    resultsEl.innerHTML = '';
+    statusEl.textContent = '';
+
+    const trimmed = query.trim();
+    if (!trimmed) return;
+
+    statusEl.textContent = 'Searching…';
+
+    const matchedExternalTopics = externalTopics.filter((item) =>
+      item.topic.toLowerCase().includes(trimmed.toLowerCase())
+    );
+
+    let pageResults = [];
+    try {
+      const pf = await getPagefind();
+      const { results } = await pf.search(trimmed);
+      pageResults = await Promise.all(results.map((r) => r.data()));
+    } catch {
+      // Pagefind's index (built from the last `npm run build`) isn't present
+      // in local `astro dev` — nothing to recover from client-side; the
+      // external-topic matches above still work regardless.
+    }
+
+    const total = pageResults.length + matchedExternalTopics.length;
+    statusEl.textContent = total === 1 ? '1 result' : `${total} results`;
+
+    for (const result of pageResults) {
+      renderResult({
+        href: result.url,
+        title: result.meta?.title || result.url,
+        excerptHtml: result.excerpt,
+        section: sectionLabel(result.url),
+        external: false,
+      });
+    }
+
+    for (const item of matchedExternalTopics) {
+      renderResult({
+        href: item.url,
+        title: item.topic,
+        excerptHtml: '',
+        section: 'Medical Conditions',
+        external: true,
+      });
+    }
+
+    if (total === 0) {
+      statusEl.textContent = '';
+      renderEmptyState(trimmed);
+    }
+  }
+
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const query = input.value;
+    const url = new URL(window.location.href);
+    if (query.trim()) {
+      url.searchParams.set('q', query);
+    } else {
+      url.searchParams.delete('q');
+    }
+    window.history.replaceState({}, '', url);
+    runSearch(query);
+  });
+
+  const initialQuery = new URLSearchParams(window.location.search).get('q');
+  if (initialQuery) {
+    input.value = initialQuery;
+    runSearch(initialQuery);
+  }
+</script>
+
+<style>
+  .search-page {
+    padding-block: 3rem 4rem;
+  }
+
+  /* Width/alignment comes from the single .prose-column wrapper around all
+     of this in the markup above (see global.css) — this is fundamentally
+     a "read text, tap a link" page, not a photo+card two-column layout
+     like the homepage sections, so the whole thing gets the same narrow,
+     centered treatment as article body content. */
+  .search-page__lede {
+    color: var(--color-ink-soft);
+    margin-top: 0;
+  }
+
+  .search-form {
+    margin-top: 2rem;
+  }
+
+  .search-form__label {
+    display: block;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+
+  .search-form__row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .search-form__input {
+    flex: 1 1 16rem;
+    min-height: var(--tap-target-min);
+    padding: 0.75rem 1rem;
+    font-size: 1.1rem;
+    font-family: inherit;
+    color: var(--color-ink);
+    background-color: var(--color-offwhite);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+  }
+
+  .search-form__input:focus-visible {
+    border-color: var(--color-deep-green);
+  }
+
+  .search-form__button {
+    flex-shrink: 0;
+    font-size: 1.1rem;
+  }
+
+  .search-status {
+    margin: 1.5rem 0 0;
+    font-weight: 700;
+    color: var(--color-ink-soft);
+    min-height: 1.5em;
+  }
+
+  .search-results {
+    list-style: none;
+    margin-top: 0.75rem;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+
+  /* :global() below — everything under #search-results is built by the
+     client script at runtime, not written in this file's template, so it
+     never receives Astro's automatic scoping attribute. A plain (scoped)
+     selector here would silently never match any of it. */
+  :global(.search-result) {
+    display: flex;
+  }
+
+  :global(.search-result h3) {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  :global(.search-result__section) {
+    margin: 0.15rem 0 0;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 700;
+    color: var(--color-deep-green);
+  }
+
+  /* Same terracotta "you're leaving the site" marker as the Medical
+     Conditions index page's external links — same color rule (accent-only,
+     never the text itself), same meaning. */
+  :global(.search-result__external-icon) {
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+    color: var(--color-terracotta);
+  }
+
+  :global(.search-result__badge) {
+    margin-left: 0;
+  }
+
+  /* Pagefind wraps matched terms in <mark> within the excerpt — the
+     browser default is a jarring bright yellow that doesn't belong in
+     this palette, so it's restyled with colors already in use elsewhere
+     (warm gray background, same as badges/hover states) rather than
+     introducing a new color. */
+  :global(.search-result mark) {
+    background-color: var(--color-warm-gray);
+    color: var(--color-ink);
+    font-weight: 700;
+    border-radius: 2px;
+    padding: 0 0.15em;
+  }
+
+  :global(.search-empty p) {
+    margin: 0;
+    padding: 1rem 0;
+    color: var(--color-ink-soft);
+  }
+
+  :global(.search-empty a) {
+    font-weight: 700;
+  }
+</style>
