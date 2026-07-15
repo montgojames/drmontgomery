@@ -1,16 +1,16 @@
 /// <reference types="@cloudflare/workers-types" />
 
 // Backs the "Leave a testimonial" form in TestimonialsSection.astro (used
-// on the About page). Same shape as functions/api/suggest-topic.ts —
-// plain Cloudflare Pages Function, same SUGGESTIONS KV namespace, same
-// honeypot handling — just a different stored entry type. New
-// submissions are always "pending"; nothing here ever makes them appear
-// on the live site (see functions/admin/suggestions.ts for the
-// approve/reject step, and CLAUDE.md for why publishing itself stays a
-// separate manual step).
+// on the About page). Routed to by worker/index.ts for
+// POST /api/testimonial. Same shape as suggest-topic.ts — same
+// SUGGESTIONS KV namespace, same honeypot handling — just a different
+// stored entry type. New submissions are always "pending"; nothing here
+// ever makes them appear on the live site (see admin-suggestions.ts for
+// the approve/reject step, and CLAUDE.md for why publishing itself stays
+// a separate manual step).
 
-import type { Env } from '../_lib/suggestions';
-import { TESTIMONIAL_KEY_PREFIX, type StoredTestimonial } from '../_lib/testimonials';
+import type { Env } from '../lib/suggestions';
+import { TESTIMONIAL_KEY_PREFIX, type StoredTestimonial } from '../lib/testimonials';
 
 interface TestimonialPayload {
   name?: string;
@@ -30,7 +30,7 @@ function jsonResponse(body: unknown, status: number): Response {
   });
 }
 
-export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
+export async function handleTestimonial(request: Request, env: Env): Promise<Response> {
   let body: TestimonialPayload;
   try {
     body = await request.json();
@@ -77,4 +77,4 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   await env.SUGGESTIONS.put(key, JSON.stringify(testimonial));
 
   return jsonResponse({ ok: true }, 200);
-};
+}

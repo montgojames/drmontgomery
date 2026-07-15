@@ -44,11 +44,40 @@ function serveDistPagefindDuringDev() {
   };
 }
 
+// TinaCMS's admin bundle is written directly to public/admin/index.html (by
+// `tinacms build` or `tinacms dev`) — Astro's own build later copies it into
+// dist/admin/index.html like any other static asset, and in production
+// Cloudflare's static-asset serving resolves the clean URL /admin (and
+// /admin/) straight to that file automatically. Vite's dev-server static
+// serving does NOT do that same clean-URL resolution: /admin/index.html
+// loads fine under `astro dev`, but /admin and /admin/ 404 (confirmed — this
+// was reported as a real bug before realizing it was dev-only). Brett's
+// documented workflow is visiting <site>/admin directly, so this normalizes
+// the same behavior locally that Cloudflare already gives for free in prod.
+function serveAdminIndexDuringDev() {
+  return {
+    name: 'serve-admin-index-during-dev',
+    hooks: {
+      'astro:server:setup': ({ server }) => {
+        server.middlewares.use((req, res, next) => {
+          if (req.url !== '/admin' && req.url !== '/admin/') return next();
+          const filePath = path.join(process.cwd(), 'public', 'admin', 'index.html');
+          fs.readFile(filePath, (err, data) => {
+            if (err) return next();
+            res.setHeader('Content-Type', 'text/html');
+            res.end(data);
+          });
+        });
+      },
+    },
+  };
+}
+
 // https://astro.build/config
 export default defineConfig({
   site: 'https://drmontgomery.org',
   output: 'static',
-  integrations: [serveDistPagefindDuringDev()],
+  integrations: [serveDistPagefindDuringDev(), serveAdminIndexDuringDev()],
   markdown: {
     // Every link inside article content (citations, sources) is an
     // absolute http(s) URL to an outside site — nav/card links elsewhere

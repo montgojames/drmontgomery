@@ -7,19 +7,22 @@
   },
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build && pagefind --site dist",
+    "build": "tinacms build && astro build && pagefind --site dist",
     "preview": "astro preview",
-    "dev:functions": "astro build && wrangler pages dev dist --kv SUGGESTIONS",
+    "dev:worker": "astro build && wrangler dev",
+    "dev:cms": "tinacms dev -c \"astro dev\"",
     "astro": "astro"
   },
   "dependencies": {
     "@astrojs/markdown-remark": "^7.2.1",
     "@lucide/astro": "^1.24.0",
     "astro": "^7.0.7",
-    "rehype-external-links": "^3.0.0"
+    "rehype-external-links": "^3.0.0",
+    "tinacms": "^3.10.1"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260714.1",
+    "@tinacms/cli": "^2.5.5",
     "pagefind": "^1.5.2",
     "wrangler": "^4.110.0"
   }

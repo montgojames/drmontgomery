@@ -2,15 +2,13 @@
 
 // Internal-only admin view — for Brett/James, not linked anywhere in the
 // site nav or sitemap. Protection is Cloudflare Access (Zero Trust),
-// configured on the Cloudflare dashboard against the /admin/* path, NOT in
-// this file — see CLAUDE.md for the exact setup steps. Deliberately
+// configured on the Cloudflare dashboard against this specific path, NOT
+// in this file — see CLAUDE.md for the exact setup steps. Deliberately
 // unstyled beyond basic readability; the only audience is the two of you.
 //
 // Lists BOTH suggested topics and testimonials — one KV namespace
 // (SUGGESTIONS), partitioned by the key prefix testimonials use (see
-// functions/_lib/testimonials.ts), not two separate admin routes. This is
-// the "second tab/section on the existing page" from CLAUDE.md, not a new
-// protected route.
+// worker/lib/testimonials.ts), not two separate admin routes.
 //
 // Approve/reject here ONLY flips a status flag in KV — it does NOT publish
 // anything to the live site. Approved testimonials still need to be added
@@ -18,8 +16,8 @@
 // appear on /about/. There is no code path from this admin action to the
 // public site.
 
-import type { Env, StoredSuggestion } from '../_lib/suggestions';
-import { TESTIMONIAL_KEY_PREFIX, type StoredTestimonial, type TestimonialStatus } from '../_lib/testimonials';
+import type { Env, StoredSuggestion } from '../lib/suggestions';
+import { TESTIMONIAL_KEY_PREFIX, type StoredTestimonial, type TestimonialStatus } from '../lib/testimonials';
 
 function escapeHtml(value: string): string {
   return value
@@ -33,18 +31,18 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
 }
 
-async function renderPage(env: Env['SUGGESTIONS']): Promise<string> {
+async function renderPage(kv: KVNamespace): Promise<string> {
   // KV list() returns up to 1000 keys per call, uncursored here — fine for
   // how few submissions either form will realistically get; revisit if
   // this ever needs pagination.
-  const list = await env.list();
+  const list = await kv.list();
   const suggestionKeys = list.keys.filter((k) => !k.name.startsWith(TESTIMONIAL_KEY_PREFIX));
   const testimonialKeys = list.keys.filter((k) => k.name.startsWith(TESTIMONIAL_KEY_PREFIX));
 
   const suggestions = (
     await Promise.all(
       suggestionKeys.map(async (k): Promise<StoredSuggestion | null> => {
-        const raw = await env.get(k.name);
+        const raw = await kv.get(k.name);
         return raw ? (JSON.parse(raw) as StoredSuggestion) : null;
       })
     )
@@ -55,7 +53,7 @@ async function renderPage(env: Env['SUGGESTIONS']): Promise<string> {
   const testimonials = (
     await Promise.all(
       testimonialKeys.map(async (k): Promise<{ key: string; entry: StoredTestimonial } | null> => {
-        const raw = await env.get(k.name);
+        const raw = await kv.get(k.name);
         return raw ? { key: k.name, entry: JSON.parse(raw) as StoredTestimonial } : null;
       })
     )
@@ -146,7 +144,7 @@ async function renderPage(env: Env['SUGGESTIONS']): Promise<string> {
 </html>`;
 }
 
-export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
+export async function handleAdminSuggestionsGet(env: Env): Promise<Response> {
   const html = await renderPage(env.SUGGESTIONS);
   return new Response(html, {
     status: 200,
@@ -155,14 +153,14 @@ export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
       'X-Robots-Tag': 'noindex, nofollow',
     },
   });
-};
+}
 
 // Approve/reject a testimonial. Plain form POST (no client JS needed) —
-// Post/Redirect/Get back to this same GET route so a page refresh doesn't
+// Post/Redirect/Get back to this same URL so a page refresh doesn't
 // resubmit the action. Only ever touches keys under TESTIMONIAL_KEY_PREFIX
 // and only ever changes `status` — never writes new content, never touches
 // suggestions.
-export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
+export async function handleAdminSuggestionsPost(request: Request, env: Env): Promise<Response> {
   const form = await request.formData();
   const key = String(form.get('key') ?? '');
   const action = String(form.get('action') ?? '');
@@ -185,4 +183,4 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     status: 303,
     headers: { Location: '/admin/suggestions' },
   });
-};
+}

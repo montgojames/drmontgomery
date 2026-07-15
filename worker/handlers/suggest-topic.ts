@@ -1,16 +1,16 @@
 /// <reference types="@cloudflare/workers-types" />
 
 // Backs the "Suggest a topic" form on /medical-conditions/ (see that page's
-// <script> for the fetch call). Deliberately plain Cloudflare Pages
-// Functions, not Astro SSR — the rest of the site stays fully static
-// (output: 'static' in astro.config.mjs); this file lives outside Astro's
-// build entirely, per Cloudflare Pages' own functions/ convention.
+// <script> for the fetch call). Routed to by worker/index.ts for
+// POST /api/suggest-topic — see that file for why this is a plain function
+// rather than a Cloudflare Pages Function (Pages' functions/ directory
+// auto-routing doesn't exist under the unified Workers + static-assets
+// model this project now deploys under).
 //
-// Requires a KV namespace bound as SUGGESTIONS in the Pages project's
-// Functions settings (dashboard: Settings -> Functions -> KV namespace
-// bindings) — see CLAUDE.md for the exact steps.
+// Requires a KV namespace bound as SUGGESTIONS (see wrangler.jsonc) — see
+// CLAUDE.md for the exact dashboard steps to create/bind it.
 
-import type { Env, StoredSuggestion } from '../_lib/suggestions';
+import type { Env, StoredSuggestion } from '../lib/suggestions';
 
 interface SuggestionPayload {
   topic?: string;
@@ -28,7 +28,7 @@ function jsonResponse(body: unknown, status: number): Response {
   });
 }
 
-export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
+export async function handleSuggestTopic(request: Request, env: Env): Promise<Response> {
   let body: SuggestionPayload;
   try {
     body = await request.json();
@@ -72,4 +72,4 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   await env.SUGGESTIONS.put(key, JSON.stringify(suggestion));
 
   return jsonResponse({ ok: true }, 200);
-};
+}
