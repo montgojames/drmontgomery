@@ -19,13 +19,7 @@
 
   // Same KV namespace used by both Suggest-a-topic and Testimonials (see
   // worker/lib/testimonials.ts for how entries are told apart within it).
-  //
-  // ⚠️ "REPLACE_ME" is a placeholder, not a real namespace — create the
-  // actual namespace first (Cloudflare dashboard: Workers & Pages -> KV ->
-  // Create a namespace, or `npx wrangler kv namespace create SUGGESTIONS`),
-  // then paste its id here before the first real deploy. Local `wrangler
-  // dev` works fine with the placeholder still in place (it just becomes
-  // the local sqlite-backed dev store's identifier, not a real remote
-  // namespace) — this only needs to be real for an actual deploy.
-  "kv_namespaces": [{ "binding": "SUGGESTIONS", "id": "REPLACE_ME" }]
+  // Real namespace, created via the Cloudflare dashboard ahead of the
+  // first production deploy.
+  "kv_namespaces": [{ "binding": "SUGGESTIONS", "id": "daa0948b17874e899fa7c2b9cfc5320f" }]
 }
