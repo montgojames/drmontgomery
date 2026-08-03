@@ -122,17 +122,18 @@ button {
 .skip-link {
   position: absolute;
   left: 1rem;
-  top: -3rem;
+  top: 1rem;
   background: var(--color-deep-green);
   color: var(--color-offwhite);
   padding: 0.75rem 1.25rem;
   border-radius: var(--radius-md);
   z-index: 100;
-  transition: top 0.15s ease;
+  transform: translateY(calc(-100% - 1rem));
+  transition: transform 0.15s ease;
 }
 
 .skip-link:focus {
-  top: 1rem;
+  transform: translateY(0);
 }
 
 /* --- Buttons ---
