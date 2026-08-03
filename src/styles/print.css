@@ -108,4 +108,21 @@
     font-size: 0.85em;
     color: #333;
   }
+
+  /* Replaces the footer disclaimer, which is hidden for print above (see
+     .site-footer) — same wording, plus the title/URL so a printed page is
+     traceable back to its source once separated from the browser. */
+  .topic-page__print-footer {
+    display: block !important;
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid #000;
+    font-size: 0.85em;
+    color: #333;
+  }
+
+  .topic-page__print-source {
+    font-weight: 700;
+    margin-bottom: 0.3em;
+  }
 }

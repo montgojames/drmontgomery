@@ -42,6 +42,16 @@ const {
       }
       <slot name="after-body" />
     </div>
+
+    <!-- Print-only: .site-footer (which normally carries the disclaimer) is
+         hidden for print (see print.css), so a printed page needs its own
+         copy plus enough to trace it back to the source once it's off
+         screen and separated from the browser. Hidden on screen by default;
+         print.css's @media print block is what makes this visible. -->
+    <div class="topic-page__print-footer">
+      <p class="topic-page__print-source">{title} &middot; drmontgomery.org</p>
+      <p>This is education, not medical advice &middot; If this is an emergency, call 911.</p>
+    </div>
   </div>
 </BaseLayout>
 
@@ -118,5 +128,11 @@ const {
 
   .topic-page__body :global(strong) {
     color: var(--color-ink);
+  }
+
+  /* Hidden on screen — print.css's @media print block is what displays
+     this, so it never duplicates the footer disclaimer visually online. */
+  .topic-page__print-footer {
+    display: none;
   }
 </style>
