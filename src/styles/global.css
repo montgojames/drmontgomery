@@ -51,6 +51,25 @@
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  /* Softens the jump for the footer's in-page section links and the
+     article "Back to top" link. */
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* Keeps in-page anchor targets from landing underneath the sticky header
+   (see .site-header's position: sticky in Header.astro) when jumped to
+   directly — via the footer nav's #during-your-stay / #decisions-and-next-steps
+   links, or the article "Back to top" link's #main-content target. */
+#main-content,
+#during-your-stay,
+#decisions-and-next-steps {
+  scroll-margin-top: var(--header-height);
 }
 
 body {

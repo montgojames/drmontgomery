@@ -1,9 +1,23 @@
 ---
+import { duringYourStayGroup, decisionsGroup, navLinks } from '../data/navigation';
+
 const year = new Date().getFullYear();
 ---
 
 <footer class="site-footer">
   <div class="container">
+    <nav class="footer-nav" aria-label="Footer">
+      <ul>
+        <li><a href="/">Home</a></li>
+        <li><a href={`/#${duringYourStayGroup.slug}`}>{duringYourStayGroup.label}</a></li>
+        <li><a href={`/#${decisionsGroup.slug}`}>{decisionsGroup.label}</a></li>
+        {navLinks.map((link) => (
+          <li>
+            <a href={link.href}>{link.label}</a>
+          </li>
+        ))}
+      </ul>
+    </nav>
     <p class="disclaimer">This is education, not medical advice &middot; If this is an emergency, call 911.</p>
     <p class="copyright">&copy; {year} Dr. Montgomery. All rights reserved.</p>
   </div>
@@ -18,6 +32,35 @@ const year = new Date().getFullYear();
 
   .site-footer .container {
     padding-block: 2rem;
+  }
+
+  /* Plain text link row, brighter than the muted disclaimer/copyright
+     below it since it's real navigation, not de-emphasized legal text
+     (see CLAUDE.md's footer typography note). Same hover mechanic as the
+     rest of the site (global.css's a:hover): text color stays put, only
+     the underline picks up terracotta — terracotta is accent-only, never
+     text (see CLAUDE.md's color usage rule). */
+  .footer-nav ul {
+    list-style: none;
+    margin: 0 0 1.5rem;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 1.5rem;
+  }
+
+  .footer-nav a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--tap-target-min);
+    color: var(--color-offwhite);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .footer-nav a:hover {
+    text-decoration: underline;
+    text-decoration-color: var(--color-terracotta);
   }
 
   /* Single line by explicit request (overrides the prior two-stacked-line

@@ -1,4 +1,5 @@
 ---
+import { ArrowUp } from '@lucide/astro';
 import BaseLayout from './BaseLayout.astro';
 
 interface Props {
@@ -41,6 +42,14 @@ const {
         )
       }
       <slot name="after-body" />
+      {
+        hasContent && (
+          <a href="#main-content" class="btn btn-secondary back-to-top">
+            <ArrowUp class="btn-icon" stroke-width={1.75} aria-hidden="true" />
+            Back to top
+          </a>
+        )
+      }
     </div>
 
     <!-- Print-only: .site-footer (which normally carries the disclaimer) is
@@ -134,5 +143,13 @@ const {
      this, so it never duplicates the footer disclaimer visually online. */
   .topic-page__print-footer {
     display: none;
+  }
+
+  /* Long articles (e.g. Discharge Planning) can run well past a screen's
+     height, and the footer was the only thing waiting at the bottom —
+     .btn-secondary reuses the same styling as ArticleActions.astro's
+     Print/Share buttons rather than introducing a new visual treatment. */
+  .back-to-top {
+    margin-top: 2rem;
   }
 </style>
