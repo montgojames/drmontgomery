@@ -14,7 +14,11 @@
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
-    "run_worker_first": ["/api/*", "/admin/suggestions"]
+    "run_worker_first": ["/api/*", "/admin/suggestions"],
+    // Without this, an unmatched path returns a generic empty-body 404 even
+    // though astro build already emits dist/404.html (from src/pages/404.astro)
+    // — Workers only serves that file for unmatched routes when this is set.
+    "not_found_handling": "404-page"
   },
 
   // Same KV namespace used by both Suggest-a-topic and Testimonials (see
