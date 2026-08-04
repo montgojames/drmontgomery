@@ -128,4 +128,15 @@
     font-weight: 700;
     margin-bottom: 0.3em;
   }
+
+  /* The About page's collapsed "Full credentials" disclosure (see
+     about.astro) is a screen-only space-saving default — a printed page
+     isn't scrolled, so there's no reason to withhold the CV there.
+     about.astro's own script forces the <details> open (via the `open`
+     property — CSS alone can't override native details/summary
+     visibility, only that DOM property/attribute can) on beforeprint;
+     this just hides the now-nonfunctional toggle itself on paper. */
+  .cv-disclosure > summary {
+    display: none !important;
+  }
 }

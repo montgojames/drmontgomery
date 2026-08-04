@@ -18,6 +18,13 @@ interface Props {
    * static list of section links plus a sticky "Jump to a section" button;
    * omitted entirely (no markup, no script) when not provided. */
   tableOfContents?: TableOfContentsItem[];
+  /** Default true: wraps the default slot in a single .topic-page__body div,
+   * as every article page needs. Set false when the caller needs to
+   * interleave other components (e.g. About's TestimonialsSection) between
+   * pieces of its own content instead of getting one opaque wrapped block —
+   * the caller is then responsible for its own .topic-page__body div(s)
+   * around whichever parts of its slot content need that prose styling. */
+  wrapBody?: boolean;
 }
 
 const {
@@ -27,6 +34,7 @@ const {
   hasContent = false,
   placeholder = 'This article is being written — check back soon.',
   tableOfContents,
+  wrapBody = true,
 } = Astro.props;
 ---
 
@@ -88,9 +96,13 @@ const {
       }
       {
         hasContent ? (
-          <div class="topic-page__body">
+          wrapBody ? (
+            <div class="topic-page__body">
+              <slot />
+            </div>
+          ) : (
             <slot />
-          </div>
+          )
         ) : (
           <p class="topic-page__placeholder">{placeholder}</p>
         )

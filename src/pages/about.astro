@@ -1,15 +1,40 @@
 ---
-import { getCollection, render } from 'astro:content';
+import { getCollection } from 'astro:content';
 import { Image } from 'astro:assets';
+import { ChevronDown } from '@lucide/astro';
 import TopicLayout from '../layouts/TopicLayout.astro';
 import TestimonialsSection from '../components/TestimonialsSection.astro';
 import brettPhoto from '../assets/images/brett-montgomery.jpeg';
 
 const [entry] = await getCollection('about');
-const { Content } = await render(entry);
+
+// Splitting entry.rendered.html (the already-fully-rendered markdown body —
+// same pipeline, same heading ids, as a plain <Content /> would give) by
+// plain string search, rather than touching the source file or Tina's
+// schema, is what lets TestimonialsSection land between the intro and the
+// CV in real document order — not just visually reordered via CSS, which
+// would leave keyboard/screen-reader order mismatched from what's on
+// screen. Brett's words are untouched either way; this only changes where
+// existing rendered HTML gets placed in the page.
+//
+// Split points are exact strings from the current rendered output (see the
+// two h3 headings "Curriculum Vitae" / a lone <hr> before "Hobbies:" in
+// src/content/about/about.md) — if Brett ever renames the "Curriculum
+// Vitae" heading, or a second <hr> is added anywhere else in the body,
+// these need updating to match.
+const html = entry.rendered?.html ?? '';
+const cvMarker = '<h2 id="curriculum-vitae">';
+const hrMarker = '<hr>';
+
+const cvStart = html.indexOf(cvMarker);
+const hrStart = cvStart === -1 ? -1 : html.indexOf(hrMarker, cvStart);
+
+const introHtml = cvStart === -1 ? html : html.slice(0, cvStart);
+const cvHtml = cvStart === -1 ? '' : html.slice(cvStart, hrStart === -1 ? html.length : hrStart);
+const hobbiesHtml = hrStart === -1 ? '' : html.slice(hrStart);
 ---
 
-<TopicLayout title={entry.data.title} hasContent={true}>
+<TopicLayout title={entry.data.title} hasContent={true} wrapBody={false}>
   <!-- No wide "figure" slot here on purpose — a standalone wide photo was
        exactly the bug (sitting at the old wide edge, disconnected from the
        now-correctly-aligned title/body, with an orphaned empty gap beside
@@ -28,9 +53,59 @@ const { Content } = await render(entry);
     />
     <p class="about-byline__caption">—Brett Montgomery, MD</p>
   </div>
-  <Content />
-  <TestimonialsSection slot="after-body" />
+
+  <div class="topic-page__body">
+    <Fragment set:html={introHtml} />
+  </div>
+
+  <TestimonialsSection />
+
+  <!-- Full CV moved behind a native <details> disclosure — collapsed by
+       default so it's not the first ~9 screens of a long page for almost
+       everyone who never scrolls that far, but still fully in the DOM
+       (not display:none-only hiding) so Pagefind still indexes it. Native
+       details/summary over a JS-toggled show/hide: no script needed for
+       the toggle itself, and correct keyboard/screen-reader semantics for
+       free. -->
+  <details class="cv-disclosure">
+    <summary class="btn btn-secondary cv-disclosure__summary">
+      Full credentials
+      <ChevronDown class="cv-disclosure__chevron" stroke-width={1.75} aria-hidden="true" />
+    </summary>
+    <div class="topic-page__body cv-disclosure__body">
+      <Fragment set:html={cvHtml} />
+    </div>
+  </details>
+
+  {
+    hobbiesHtml && (
+      <div class="topic-page__body">
+        <Fragment set:html={hobbiesHtml} />
+      </div>
+    )
+  }
 </TopicLayout>
+
+<script>
+  // CSS alone can't reveal collapsed <details> content — only the `open`
+  // attribute/property controls it (confirmed: browsers hide collapsed
+  // details content through internal rendering suppression, not through
+  // any standard CSS property author styles can target). A printed page
+  // isn't scrolled, so there's no reason to withhold the CV there — force
+  // it open for the print, then restore whatever state the reader had it
+  // in once printing is done.
+  const cvDisclosure = document.querySelector<HTMLDetailsElement>('.cv-disclosure');
+  if (cvDisclosure) {
+    let wasOpen = cvDisclosure.open;
+    window.addEventListener('beforeprint', () => {
+      wasOpen = cvDisclosure.open;
+      cvDisclosure.open = true;
+    });
+    window.addEventListener('afterprint', () => {
+      cvDisclosure.open = wasOpen;
+    });
+  }
+</script>
 
 <style>
   /* Same rounded-rectangle treatment (shape, radius, aspect-ratio) as the
@@ -70,5 +145,49 @@ const { Content } = await render(entry);
     margin: 0;
     font-weight: 700;
     color: var(--color-ink-soft);
+  }
+
+  .cv-disclosure {
+    margin-top: 3rem;
+  }
+
+  /* min-height/width/justify-content override .btn's normal inline
+     auto-width, centered content — full width with the label and chevron
+     at opposite edges, matching the jump-nav trigger's own pattern
+     (TopicLayout.astro) rather than inventing a new disclosure look.
+     list-style/marker removal replaces the browser's default triangle
+     with the same chevron icon used elsewhere on the site. */
+  .cv-disclosure__summary {
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+    min-height: var(--tap-target-min);
+    list-style: none;
+    cursor: pointer;
+  }
+
+  .cv-disclosure__summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .cv-disclosure__chevron {
+    width: 1.1rem;
+    height: 1.1rem;
+    flex-shrink: 0;
+    transition: transform 0.15s ease;
+  }
+
+  .cv-disclosure[open] .cv-disclosure__chevron {
+    transform: rotate(180deg);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cv-disclosure__chevron {
+      transition: none;
+    }
+  }
+
+  .cv-disclosure__body {
+    margin-top: 0.5rem;
   }
 </style>
