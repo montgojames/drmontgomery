@@ -118,6 +118,13 @@ h1 {
 
 h2 {
   font-size: clamp(1.5rem, 4vw, 2rem);
+  /* Was scroll-margin-top: 0 (the default) — an in-page anchor jump to a
+     heading (e.g. a Discharge Planning table-of-contents link) landed it
+     flush underneath the sticky header, with the header actually
+     covering the first line of text. +1px accounts for .site-header's
+     own border-bottom (see Header.astro); +1rem is breathing room so the
+     heading doesn't land jammed right against the header edge either. */
+  scroll-margin-top: calc(var(--header-height) + 1px + 1rem);
 }
 
 p {
