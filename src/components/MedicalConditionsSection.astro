@@ -11,11 +11,19 @@ import medicalConditionsPhoto from '../assets/images/medical-conditions.png';
   <div class="container medical-conditions__grid">
     <div class="medical-conditions__photo-block">
       <div class="medical-conditions__photo">
+        <!-- widths/sizes: same two-breakpoint slot as
+             DuringYourStaySection.astro's photo (full width on mobile up to
+             ~730px, fixed ~495px grid column on desktop) — see that file's
+             comment. Was serving this file's full 1904px source to every
+             visitor regardless of screen size; capped here at roughly 2x
+             the larger 730px slot instead. -->
         <Image
           src={medicalConditionsPhoto}
           alt="A sunlit desk with an open laptop, a stack of medical reference books, and a stethoscope."
           width={1904}
           height={2544}
+          widths={[400, 495, 730, 990, 1460]}
+          sizes="(min-width: 48rem) 495px, 100vw"
         />
       </div>
       <hr class="medical-conditions__photo-rule" />

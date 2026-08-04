@@ -10,11 +10,42 @@ import brettPhoto from '../assets/images/brett-montgomery.jpeg';
 <BaseLayout title="Home" pagefindIgnore>
   <div class="container hero">
     <div class="hero__top">
-      <Image src={brettPhoto} alt="Dr. Brett Montgomery" width={400} height={446} class="hero__photo hero__photo--desktop" />
+      <!-- priority (loading="eager" fetchpriority="high") on both: this is
+           the first visual content a visitor sees, and exactly one of the
+           two is always on-screen at any given viewport (CSS toggles which
+           via display:none/block — see .hero__photo--desktop/--mobile
+           below), so neither can be left to the default lazy behavior.
+           widths/sizes reflect each variant's true rendered CSS size (200px
+           desktop, after .hero__photo--desktop's zoom:0.5 halves the
+           400x446 box below; 65px mobile, from its 4.5rem/72px height at
+           the 400:446 aspect ratio) — capped at roughly 2x that for retina
+           screens, not the full 905px source. width/height stay at the
+           full 400/446 unchanged: the zoom hack's aspect-ratio math and
+           layout-shift reservation depend on that ratio, and widths/sizes
+           control the actual downloaded bytes independently of it. -->
+      <Image
+        src={brettPhoto}
+        alt="Dr. Brett Montgomery"
+        width={400}
+        height={446}
+        widths={[200, 400]}
+        sizes="200px"
+        priority
+        class="hero__photo hero__photo--desktop"
+      />
       <div class="hero__text">
         <h1 class="hero__quote">The goal of this website is to inform, educate, and promote understanding for the hospitalized patient.</h1>
         <div class="hero__byline-row">
-          <Image src={brettPhoto} alt="Dr. Brett Montgomery" width={400} height={446} class="hero__photo hero__photo--mobile" />
+          <Image
+            src={brettPhoto}
+            alt="Dr. Brett Montgomery"
+            width={400}
+            height={446}
+            widths={[65, 130]}
+            sizes="65px"
+            priority
+            class="hero__photo hero__photo--mobile"
+          />
           <p class="hero__byline">—Brett Montgomery, MD</p>
         </div>
       </div>

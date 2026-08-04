@@ -44,11 +44,18 @@ const hobbiesHtml = hrStart === -1 ? '' : html.slice(hrStart);
        thing in the default slot) so it's aligned with everything else,
        not floating separately. -->
   <div class="about-byline">
+    <!-- widths/sizes capped at ~2x .about-byline__photo's true rendered
+         width (14.5rem/232px height at the 400:446 aspect ratio ≈ 208px) —
+         not the full 480px this was requesting as a single fixed image
+         before. Default loading="lazy" is correct here (unlike the
+         homepage hero, this isn't the page's first visual content). -->
     <Image
       src={brettPhoto}
       alt="Dr. Brett Montgomery, wearing a white coat over a striped collared shirt, smiling."
       width={480}
       height={535}
+      widths={[208, 416]}
+      sizes="208px"
       class="about-byline__photo"
     />
     <p class="about-byline__caption">—Brett Montgomery, MD</p>

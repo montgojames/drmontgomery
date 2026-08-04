@@ -22,11 +22,19 @@ const topics = decisionsGroup.topics.map((topic) => ({
   <div class="container decisions-section__grid">
     <div class="decisions-section__photo-block">
       <div class="decisions-section__photo">
+        <!-- widths/sizes: same two-breakpoint slot as
+             DuringYourStaySection.astro's photo (full width on mobile up to
+             ~730px, fixed ~495px grid column on desktop) — see that file's
+             comment. Was serving this file's full 1904px source to every
+             visitor regardless of screen size; capped here at roughly 2x
+             the larger 730px slot instead. -->
         <Image
           src={decisionsPhoto}
           alt="An older couple discussing plans together at a table, with a notepad and pen in front of them."
           width={1904}
           height={2544}
+          widths={[400, 495, 730, 990, 1460]}
+          sizes="(min-width: 48rem) 495px, 100vw"
         />
       </div>
       <hr class="decisions-section__photo-rule" />

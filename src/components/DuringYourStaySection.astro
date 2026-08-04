@@ -22,11 +22,20 @@ const topics = duringYourStayGroup.topics.map((topic) => ({
   <div class="container during-stay__grid">
     <div class="during-stay__photo-block">
       <div class="during-stay__photo">
+        <!-- widths/sizes: this photo is full container width on mobile
+             (up to ~730px, just under the 48rem breakpoint below) and a
+             fixed ~495px grid column on desktop (1.15/2.15 share of the
+             72rem container, see .during-stay__grid below) — sizes
+             expresses both; widths is capped at roughly 2x the larger of
+             the two (730px), not this file's full 690px/native resolution
+             served flat to every visitor regardless of screen size. -->
         <Image
           src={duringYourStayPhoto}
           alt="A nurse talking with a patient and her visiting family in a sunlit hospital room."
           width={690}
           height={832}
+          widths={[400, 495, 730, 990, 1460]}
+          sizes="(min-width: 48rem) 495px, 100vw"
         />
       </div>
       <hr class="during-stay__photo-rule" />
