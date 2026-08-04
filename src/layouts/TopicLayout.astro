@@ -1,6 +1,11 @@
 ---
-import { ArrowUp } from '@lucide/astro';
+import { ArrowUp, ChevronDown } from '@lucide/astro';
 import BaseLayout from './BaseLayout.astro';
+
+interface TableOfContentsItem {
+  id: string;
+  label: string;
+}
 
 interface Props {
   groupLabel?: string;
@@ -8,6 +13,11 @@ interface Props {
   description?: string;
   hasContent?: boolean;
   placeholder?: string;
+  /** Only set for articles long enough to need in-page navigation (currently
+   * just Discharge Planning — see data/dischargePlanningToc.ts). Renders a
+   * static list of section links plus a sticky "Jump to a section" button;
+   * omitted entirely (no markup, no script) when not provided. */
+  tableOfContents?: TableOfContentsItem[];
 }
 
 const {
@@ -16,22 +26,66 @@ const {
   description,
   hasContent = false,
   placeholder = 'This article is being written — check back soon.',
+  tableOfContents,
 } = Astro.props;
 ---
 
 <BaseLayout title={title}>
-  <div class="container topic-page">
+  <div
+    class:list={[
+      'container',
+      'topic-page',
+      tableOfContents && tableOfContents.length > 0 && 'topic-page--has-jump-nav',
+    ]}
+  >
     <div class="prose-column">
       {groupLabel && <p class="kicker">{groupLabel}</p>}
       <h1 data-pagefind-meta="title">{title}</h1>
       {description && <p class="topic-page__lede">{description}</p>}
     </div>
 
+    {
+      tableOfContents && tableOfContents.length > 0 && (
+        <div class="jump-nav">
+          <button
+            type="button"
+            class="btn btn-secondary jump-nav__trigger"
+            aria-expanded="false"
+            aria-controls="jump-nav-panel"
+          >
+            Jump to a section
+            <ChevronDown class="jump-nav__chevron" stroke-width={1.75} aria-hidden="true" />
+          </button>
+          <ul id="jump-nav-panel" class="jump-nav__panel" hidden>
+            {tableOfContents.map((item) => (
+              <li>
+                <a href={`#${item.id}`}>{item.label}</a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )
+    }
+
     <slot name="figure" />
 
     <div class="prose-column">
       <hr class="accent-rule" />
       <slot name="actions" />
+      {
+        tableOfContents && tableOfContents.length > 0 && (
+          <nav class="toc" aria-label="Table of contents">
+            <p class="toc__heading">On this page</p>
+            <ul>
+              {tableOfContents.map((item) => (
+                <li>
+                  <a href={`#${item.id}`}>{item.label}</a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        )
+      }
       {
         hasContent ? (
           <div class="topic-page__body">
@@ -63,6 +117,36 @@ const {
     </div>
   </div>
 </BaseLayout>
+
+<script>
+  // No-op on any page without a .jump-nav (i.e. every article except
+  // Discharge Planning right now — see the tableOfContents prop).
+  document.querySelectorAll<HTMLElement>('.jump-nav').forEach((nav) => {
+    const trigger = nav.querySelector<HTMLButtonElement>('.jump-nav__trigger');
+    const panel = nav.querySelector<HTMLElement>('.jump-nav__panel');
+    if (!trigger || !panel) return;
+
+    const close = () => {
+      trigger.setAttribute('aria-expanded', 'false');
+      panel.hidden = true;
+    };
+    const open = () => {
+      trigger.setAttribute('aria-expanded', 'true');
+      panel.hidden = false;
+    };
+
+    trigger.addEventListener('click', () => {
+      const isOpen = trigger.getAttribute('aria-expanded') === 'true';
+      isOpen ? close() : open();
+    });
+
+    // A heading link's default anchor-jump behavior isn't prevented here —
+    // this just also closes the panel back to collapsed in the same click.
+    panel.addEventListener('click', (event) => {
+      if ((event.target as HTMLElement).closest('a')) close();
+    });
+  });
+</script>
 
 <style>
   .topic-page {
@@ -100,6 +184,20 @@ const {
     font-size: 1.5rem;
     margin-top: 2rem;
     margin-bottom: 0.75rem;
+  }
+
+  /* global.css's own h2 rule already offsets for the sticky site header;
+     on a page with a jump-nav, its sticky bar sits below the header too
+     (see .jump-nav's own top: calc(...) below), so a heading jumped to
+     needs to clear both, not just the header — otherwise it lands
+     partially hidden behind the jump-nav bar. 3rem matches
+     .jump-nav__trigger's own min-height below; +1rem is the same
+     breathing room the base rule already adds. More specific than the
+     plain global h2 selector, so it wins only on pages with this
+     modifier class (topic-page--has-jump-nav, set in this file's
+     frontmatter — only Discharge Planning right now). */
+  .topic-page--has-jump-nav .topic-page__body :global(h2) {
+    scroll-margin-top: calc(var(--header-height) + 1px + 3rem + 1rem);
   }
 
   .topic-page__body :global(h3) {
@@ -163,5 +261,138 @@ const {
      Print/Share buttons rather than introducing a new visual treatment. */
   .back-to-top {
     margin-top: 2rem;
+  }
+
+  /* Static table of contents (only rendered when tableOfContents is
+     passed — currently just Discharge Planning). Plain list, matching
+     the type scale/spacing of the rest of the article's prose rather
+     than introducing a new visual treatment. */
+  .toc {
+    margin: 0 0 1.5rem;
+  }
+
+  .toc__heading {
+    margin: 0 0 0.5rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 0.9rem;
+    color: var(--color-ink-soft);
+  }
+
+  .toc ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .toc a {
+    display: flex;
+    align-items: center;
+    min-height: var(--tap-target-min);
+    color: var(--color-ink);
+    font-weight: 700;
+  }
+
+  /* Sits right under the title/lede, and — since it's the same
+     position: sticky mechanism as .site-header itself (see Header.astro)
+     — sticks below the header once scrolled that far, staying reachable
+     for the rest of a long article instead of only existing at the top
+     of the page. Deliberately NOT wrapped in its own .prose-column div
+     for the width match below (max-width/margin-inline duplicate that
+     rule's own values, see global.css) — sticky positioning is bounded
+     by its containing block's height, and a wrapper containing only this
+     ~48px bar would give it almost no room to scroll before detaching.
+     Staying a direct child of .topic-page (which spans the full article
+     height) keeps it stuck for the whole scroll range. */
+  .jump-nav {
+    position: sticky;
+    top: calc(var(--header-height) + 1px);
+    z-index: 30;
+    max-width: 52.3rem;
+    margin-inline: auto;
+    margin-bottom: 2rem;
+  }
+
+  /* min-height overrides .btn's 44px — ~48px per the compact-collapsed
+     requirement. Full width and space-between (rather than .btn's normal
+     inline auto-width, centered content) so the label and chevron sit at
+     opposite edges of the prose column. */
+  .jump-nav__trigger {
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+    min-height: 3rem;
+    background-color: var(--color-cream);
+  }
+
+  .jump-nav__chevron {
+    width: 1.1rem;
+    height: 1.1rem;
+    flex-shrink: 0;
+    transition: transform 0.15s ease;
+  }
+
+  .jump-nav__trigger[aria-expanded='true'] .jump-nav__chevron {
+    transform: rotate(180deg);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .jump-nav__chevron {
+      transition: none;
+    }
+  }
+
+  /* Absolutely positioned overlay, not static block flow — opening it
+     doesn't grow .jump-nav's own box (which would otherwise push it,
+     mid-scroll, partway off the top of the screen since it's sticky) and
+     it floats over the article content below instead of shoving that
+     content down. Same visual language as Header.astro's .nav-dropdown
+     (offwhite surface, border, shadow) for consistency. */
+  .jump-nav__panel {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    left: 0;
+    right: 0;
+    margin: 0;
+    padding: 0.4rem;
+    list-style: none;
+    background-color: var(--color-offwhite);
+    border: 1px solid var(--color-border);
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 12px rgba(33, 31, 28, 0.1);
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+
+  .jump-nav__panel[hidden] {
+    display: none;
+  }
+
+  .jump-nav__panel li + li {
+    border-top: 1px solid var(--color-border);
+  }
+
+  /* No white-space: nowrap (unlike .nav-dropdown a) — full heading text,
+     wrapping normally rather than truncating, per the "full text, no
+     truncation" requirement. min-height is a floor, not a cap, so a
+     wrapped two-line row is still comfortably past the 44px minimum. */
+  .jump-nav__panel a {
+    display: flex;
+    align-items: center;
+    min-height: var(--tap-target-min);
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+    color: var(--color-ink);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .jump-nav__panel a:hover {
+    background-color: var(--color-warm-gray);
+    color: var(--color-deep-green);
   }
 </style>
