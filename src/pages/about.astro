@@ -42,10 +42,17 @@ const { Content } = await render(entry);
      intentional. Paired with a short caption line, not the long opening
      bio paragraph — pairing a photo with a whole paragraph is what caused
      the hero's own wrapping bug earlier; short text only. */
+  /* Column, not row: a row squeezes the caption into whatever horizontal
+     space is left beside the fixed-height photo, which at narrow widths
+     (measured: 365px content width inside a 320px viewport) isn't enough
+     room for "—Brett Montgomery, MD" to wrap without forcing the page to
+     overflow horizontally — the only page on the site with that problem.
+     Stacking lets the caption wrap normally at the full container width. */
   .about-byline {
     display: flex;
-    align-items: center;
-    gap: 1.25rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
     margin-bottom: 2rem;
   }
 
