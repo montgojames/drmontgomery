@@ -66,14 +66,16 @@ const topics = decisionsGroup.topics.map((topic) => ({
     padding-top: 7rem;
   }
 
-  /* Label must be literally larger (font-size) than the headline beside
-     it, at every width — not just closer in size. Set both as flat,
-     non-responsive values (not the vw-based global h2 clamp) so that
-     relationship can't invert at some viewport width. Both scaled ~50%
-     up again (1.95rem/1.725rem → 2.925rem/2.5875rem) — same ratio
-     between the two, just bigger overall. */
+  /* Was a flat 2.19375rem — fine at desktop width, but on mobile it
+     forced a two-line wrap and ate significant vertical space before any
+     real content appeared. Fluid at 85% of the h1's own clamp (same
+     mobile/desktop split as .hero__quote in index.astro) — bigger than
+     the h2's own 75% factor at every width, by construction, so the
+     "kicker must stay literally larger than the h2 beside it" rule still
+     can't invert at any viewport width (verified the same way as the
+     h1/h2 relationship — see the commit message). */
   .kicker {
-    font-size: 2.19375rem;
+    font-size: clamp(1.36rem, 2.55vw + 0.935rem, 1.7425rem);
   }
 
   /* See DuringYourStaySection.astro — deliberately tight, tighter than
@@ -111,8 +113,14 @@ const topics = decisionsGroup.topics.map((topic) => ({
     margin: 0.85rem 0 0;
   }
 
+  /* Was a flat 1.940625rem — pinned that high, it could render bigger
+     than the hero quote's own fluid h1 (.hero__quote in index.astro) at
+     viewport widths where the h1's clamp hadn't grown past it yet. Fluid
+     at exactly 75% of the h1's own clamp (same min/preferred/max ratio
+     at every width, both breakpoints) keeps it strictly smaller than the
+     h1 everywhere, not just at the two ends of the range. */
   .decisions-section__content h2 {
-    font-size: 1.940625rem;
+    font-size: clamp(1.2rem, 2.25vw + 0.825rem, 1.5375rem);
     margin-bottom: 0;
   }
 
@@ -132,6 +140,16 @@ const topics = decisionsGroup.topics.map((topic) => ({
   @media (min-width: 48rem) {
     .decisions-section {
       padding-top: 6rem;
+    }
+
+    /* Matches .hero__quote's own desktop clamp switch in index.astro,
+       scaled by the same 85%/75% factors as the mobile rules above. */
+    .kicker {
+      font-size: clamp(1.785rem, 1.53vw + 1.36rem, 2.21rem);
+    }
+
+    .decisions-section__content h2 {
+      font-size: clamp(1.575rem, 1.35vw + 1.2rem, 1.95rem);
     }
 
     .decisions-section__grid {
