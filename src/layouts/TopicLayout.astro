@@ -125,8 +125,20 @@ const {
     margin-bottom: 0;
   }
 
+  /* Vertical-only padding on the inline element: browsers don't grow the
+     line box for an inline element's padding, so it doesn't push
+     surrounding lines apart, but it does extend the clickable/tappable
+     area beyond the ~24px an inline link gets from font metrics alone
+     (19px text in a 31px line box, no padding). No background or border
+     is added, so nothing is visibly painted outside the text itself —
+     the bigger hit area is invisible, not a bigger-looking target.
+     0.375rem top+bottom (12px total) brings it to ~36px, close to the
+     44px minimum used for buttons/nav (.tap-target-min) without making
+     inline body-text links look like blocks — those already meet target
+     size via their own padding and aren't affected by this rule. */
   .topic-page__body :global(a) {
     text-decoration: underline;
+    padding-block: 0.375rem;
   }
 
   .topic-page__body :global(hr) {
