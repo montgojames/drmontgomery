@@ -73,6 +73,48 @@ function serveAdminIndexDuringDev() {
   };
 }
 
+// Same lucide "external-link" icon/paths used on the Medical Conditions and
+// Search pages (see @lucide/astro's icons/external-link.ts) — reproduced as
+// a raw hast tree here since rehype plugins can't render Astro components,
+// and colored via the shared .external-link-icon class (global.css) so the
+// color lives in one place. rehype-external-links wraps this content array
+// in its own <span> at the end of the link automatically.
+function externalLinkIconContent() {
+  return [
+    {
+      type: 'element',
+      tagName: 'svg',
+      properties: {
+        xmlns: 'http://www.w3.org/2000/svg',
+        viewBox: '0 0 24 24',
+        fill: 'none',
+        stroke: 'currentColor',
+        strokeWidth: 2,
+        strokeLinecap: 'round',
+        strokeLinejoin: 'round',
+        className: ['external-link-icon'],
+        ariaHidden: 'true',
+      },
+      children: [
+        { type: 'element', tagName: 'path', properties: { d: 'M15 3h6v6' }, children: [] },
+        { type: 'element', tagName: 'path', properties: { d: 'M10 14 21 3' }, children: [] },
+        {
+          type: 'element',
+          tagName: 'path',
+          properties: { d: 'M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6' },
+          children: [],
+        },
+      ],
+    },
+    {
+      type: 'element',
+      tagName: 'span',
+      properties: { className: ['sr-only'] },
+      children: [{ type: 'text', value: ' (external site)' }],
+    },
+  ];
+}
+
 // https://astro.build/config
 export default defineConfig({
   site: 'https://drmontgomery.org',
@@ -82,14 +124,15 @@ export default defineConfig({
     // Every link inside article content (citations, sources) is an
     // absolute http(s) URL to an outside site — nav/card links elsewhere
     // on the site are plain Astro-templated hrefs, not Markdown, so this
-    // only ever touches real external links.
+    // only ever touches real external links. Same-tab (no target) plus an
+    // icon + sr-only text, matching the site-wide external-link treatment.
     processor: unified({
       rehypePlugins: [
         [
           rehypeExternalLinks,
           {
-            target: '_blank',
-            rel: ['nofollow', 'noopener', 'noreferrer'],
+            rel: ['nofollow'],
+            content: externalLinkIconContent,
           },
         ],
       ],

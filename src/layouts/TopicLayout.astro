@@ -251,6 +251,14 @@ const {
     padding-block: 0.375rem;
   }
 
+  /* Body links are inline text, not a flex row like the list/card uses of
+     .external-link-icon elsewhere, so the icon needs its own left margin
+     to sit correctly next to the link text (display/vertical-align are on
+     the shared class itself now — see global.css). */
+  .topic-page__body :global(.external-link-icon) {
+    margin-left: 0.3rem;
+  }
+
   .topic-page__body :global(hr) {
     border: none;
     border-top: 1px solid var(--color-border);

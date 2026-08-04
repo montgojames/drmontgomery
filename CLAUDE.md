@@ -115,6 +115,13 @@ Reads like a thoughtful, warm health publication, not a clinic. Warm and calm, n
   needs no backend): Web Share API (`navigator.share()`) opening the device's native share sheet, with
   a "Copy Link" + confirmation fallback for browsers without support. Shares the specific article's URL,
   not the homepage.
+- **External links** open in the same tab (no `target="_blank"`) site-wide, marked with the shared
+  lucide external-link icon in deep green (`.external-link-icon`, `global.css` — terracotta was tried
+  first but fails the 3:1 non-text contrast minimum) plus sr-only "(external site)" text. Applied via a
+  template-level rule rather than per-link: `rehype-external-links` in `astro.config.mjs` for every
+  article-body Markdown link (host-detection isn't needed there — every Markdown link in this content is
+  already an outside citation/source, never an internal one), and directly in the Medical Conditions
+  list / Search results markup for the two places external links are hand-authored rather than Markdown.
 - Full mechanical copy-edit pass during content migration.
 - **Remaining build order** (simplest/lowest-risk first): Printable + Share ✅ → Suggest-a-topic ✅ →
   Email signup → Testimonials (submission + moderation is the biggest lift — real backend logic,
@@ -135,8 +142,7 @@ Reads like a thoughtful, warm health publication, not a clinic. Warm and calm, n
     page exists on this site for them) are matched separately by title against the same
     `medicalConditionsTopics` data the index page uses, and rendered with the shared
     `.medical-conditions-page__tag` "external resource" badge (promoted from that page into
-    `global.css` specifically so this is reuse, not a second copy of the same pattern) plus
-    `target="_blank"`.
+    `global.css` specifically so this is reuse, not a second copy of the same pattern).
   - No-results state is plain language with an escape hatch, not a dead end: "No results for
     '[query]'. Try a different word, or browse Medical Conditions directly." (linked).
 

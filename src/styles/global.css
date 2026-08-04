@@ -348,6 +348,41 @@ button {
   margin: 0 0 1.25rem;
 }
 
+/* Shared "external link" marker icon — same lucide external-link glyph
+   everywhere a link leaves the site (Medical Conditions list, Search
+   results, and every external link inside article bodies, added via
+   astro.config.mjs's rehype-external-links content option). Deep green,
+   not terracotta: terracotta is accent-only and fails the 3:1 non-text
+   contrast minimum at this size. One class, one color, defined once. */
+.external-link-icon {
+  /* Overrides the site-wide `img, svg { display: block }` reset above —
+     that reset is fine inside the flex-row anchors this icon sits in on
+     Medical Conditions/Search (flex items ignore block/inline distinctions),
+     but a block-level SVG inside a plain inline article-body link forces a
+     line break before it, dropping the icon onto its own line. */
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  vertical-align: -0.15em;
+  color: var(--color-deep-green);
+}
+
+/* Shared visually-hidden utility — off-screen but present for screen
+   readers. Used for the "(external site)" text that accompanies
+   .external-link-icon wherever it appears, and other sr-only-only text. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* Shared "external resource" pill — originally the Medical Conditions
    index page's own styling, promoted here so other pages (Search) can
    reuse the identical badge instead of redefining it. */

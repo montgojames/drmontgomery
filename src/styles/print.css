@@ -9,8 +9,9 @@
   /* Screen-only chrome and interactive affordances that mean nothing on
      paper: nav, footer, the print/share buttons themselves, the homepage's
      hero and section card grids (in case someone prints the homepage
-     directly), and the Medical Conditions index page's external-link
-     icons/badges. */
+     directly), and every external-link icon/badge/sr-only marker
+     (Medical Conditions index, Search results, and article-body links
+     alike — all share .external-link-icon/.sr-only now, see global.css). */
   .site-header,
   .site-footer,
   .skip-link,
@@ -24,8 +25,8 @@
   .medical-conditions,
   .tappable-card,
   .medical-conditions-page__tag,
-  .medical-conditions-page__external-icon,
-  .medical-conditions-page__sr-only {
+  .external-link-icon,
+  .sr-only {
     display: none !important;
   }
 
