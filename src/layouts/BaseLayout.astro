@@ -30,11 +30,41 @@ const {
     <meta name="description" content={description} />
     <title>{title} · Dr. Montgomery</title>
 
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Self-hosted (public/fonts/, @font-face rules in global.css) — see
+         that file's comment for why, and for the license/subset details.
+         Preloaded here are only the faces every page's first paint needs:
+         body text, bold body text (nav links use weight 700), the heading
+         face (every page has an h1), and the header wordmark's bold-italic
+         heading face. PT Serif's plain regular face (homepage hero quote
+         only) isn't preloaded — it doesn't matter for the other pages a
+         preload would also apply to. -->
     <link
-      href="https://fonts.googleapis.com/css2?family=PT+Serif:ital,wght@0,400;0,700;1,400;1,700&family=Atkinson+Hyperlegible:wght@400;700&display=swap"
-      rel="stylesheet"
+      rel="preload"
+      href="/fonts/atkinson-hyperlegible/atkinson-hyperlegible-400-normal.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/fonts/atkinson-hyperlegible/atkinson-hyperlegible-700-normal.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/fonts/pt-serif/pt-serif-700-normal.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/fonts/pt-serif/pt-serif-700-italic.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
     />
   </head>
   <body>

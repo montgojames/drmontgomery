@@ -4,6 +4,74 @@
    Audience constraint: older readers, low tech comfort, mostly on phones.
    ========================================================================== */
 
+/* --- Self-hosted fonts ---
+   Self-hosted from public/fonts/ instead of Google Fonts: avoids two
+   third-party handshakes (fonts.googleapis.com + fonts.gstatic.com) before
+   text can render, and stops visitor IPs going to Google on every page
+   load. Files are the exact latin-subset woff2s Google Fonts itself served
+   for the site's previous request (PT Serif ital,wght@0,400;0,700;1,400;1,700
+   + Atkinson Hyperlegible wght@400;700) — same families, weights, and
+   styles as before, nothing added or dropped. Both are SIL Open Font
+   License 1.1 (license text alongside each family's files in
+   public/fonts/); the OFL permits exactly this — bundling/embedding the
+   unmodified font files with a website — so redistributing them here is
+   compliant. font-display: swap keeps body text visible (in a fallback
+   font) instead of invisible while these load; the site's own weights are
+   swapped in as soon as they arrive. The most-used faces (heading/body
+   preloaded here via BaseLayout.astro) are picked to matter above the
+   fold on every page.
+
+   PT Serif's own regular (400, non-italic, non-bold) face is used once,
+   for the homepage hero quote (see index.astro's .hero__quote) — not
+   preloaded, since it's the one face not needed on every other page. */
+@font-face {
+  font-family: 'PT Serif';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/pt-serif/pt-serif-400-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'PT Serif';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/pt-serif/pt-serif-700-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'PT Serif';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/pt-serif/pt-serif-400-italic.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'PT Serif';
+  font-style: italic;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/pt-serif/pt-serif-700-italic.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Atkinson Hyperlegible';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/atkinson-hyperlegible/atkinson-hyperlegible-400-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Atkinson Hyperlegible';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/atkinson-hyperlegible/atkinson-hyperlegible-700-normal.woff2') format('woff2');
+}
+
 :root {
   /* --- Palette (see CLAUDE.md) --- */
   --color-cream: #f6f3ee;
