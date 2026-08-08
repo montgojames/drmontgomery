@@ -105,8 +105,9 @@ Reads like a thoughtful, warm health publication, not a clinic. Warm and calm, n
     `/admin/*` (that would also gate TinaCMS's admin bundle at `/admin/index.html`, forcing a second
     login on top of Tina's own; scoping Access to the exact suggestions path avoids that, and lines up
     with `wrangler.jsonc`'s `run_worker_first`, which only intercepts `/admin/suggestions`, not
-    `/admin/*`). See Development section below for the exact one-time dashboard setup (KV namespace +
-    Access) required before this works in production.
+    `/admin/*`). **Do not widen this to `/admin` or a wildcard** — that would put Cloudflare Access in
+    front of TinaCMS's own login and break Brett's editing workflow with a second, unnecessary auth
+    prompt. See Development section below for the exact dashboard setup (KV namespace + Access).
 - Email signup: collect-only, nothing is sent yet.
 - **Printable articles**: on-page "Print this article" button (native browser print dialog, no PDF
   library needed) + a print stylesheet — black text on white (not the cream/terracotta theme), nav/
@@ -164,14 +165,14 @@ Reads like a thoughtful, warm health publication, not a clinic. Warm and calm, n
     the in-hospital doctor–patient relationship.
 
 ## Stack & hosting
-- **Astro** (static site generator) + **TinaCMS** ✅ Set up, including the Tina Cloud account itself
-  (step 1 below is done — real Client ID + Read-Only Token in `.env`, login verified end-to-end via
-  the real GitHub OAuth popup, content indexing confirmed working). Remaining steps (2-4 below) are the
-  Cloudflare Workers project + inviting Brett. Chosen specifically because Brett needs a
-  clean, word-processor-like editing interface (rich-text field: bold/italic/headings/lists as you
-  type), not a raw-Markdown textarea or plain form fields, which is what TinaCMS's standard content
-  field provides and Decap/Keystatic don't match as closely. Uses a free Tina Cloud account (free tier
-  covers up to 2 users — James and Brett).
+- **Astro** (static site generator) + **TinaCMS** for content editing, with Tina Cloud handling login
+  for the owner. This is the decided CMS (Decap and Keystatic were considered and ruled out — not an
+  open question), chosen specifically because Brett needs a clean, word-processor-like editing
+  interface (rich-text field: bold/italic/headings/lists as you type), not a raw-Markdown textarea or
+  plain form fields, which is what TinaCMS's standard content field provides and Decap/Keystatic don't
+  match as closely. Runs on a free Tina Cloud account (free tier covers up to 2 users — James and
+  Brett); real Client ID + Read-Only Token in `.env`, GitHub OAuth login verified end-to-end, content
+  indexing confirmed working.
   - **Deliberately NOT** using TinaCMS's "live in-context visual editing" mode (`@tinacms/astro`
     integration, `<TinaIsland>`, requires switching the whole site to `output: 'server'` + an SSR
     adapter) — confirmed via TinaCMS's own docs that this is a second, heavier integration path Astro
@@ -204,58 +205,36 @@ Reads like a thoughtful, warm health publication, not a clinic. Warm and calm, n
     `/admin/index.html` works. Verified end-to-end this way: all 4 collections list correctly, opening
     a real article (Diabetes) shows the exact existing frontmatter in form fields and the real body
     text as fully-formatted rich text (bold labels render as bold, not literal `**asterisks**`).
-  - **What's still needed from James** (this is the one piece of the setup that requires an actual
-    account/login, not something doable from the repo) — **and there's a Cloudflare Workers project
-    dependency to sequence around**: the `drmontgomery.org` domain isn't connected yet on purpose
-    (Brett hasn't previewed/approved the site), but creating the Cloudflare Workers project itself is a
-    separate, earlier step from the domain, and Tina Cloud needs to be pointed at SOME URL. Order that
-    actually works:
-    1. ✅ Done. Create a free Tina Cloud account at app.tina.io, connect it to the
-       `montgojames/drmontgomery` GitHub repo (GitHub OAuth — only James does this, not Brett). Site
-       URLs during setup: local = `http://localhost:4321`, production = a placeholder for now, editable
-       later. Grab the Client ID + a Read-Only Token, put them in a local (gitignored) `.env` as
-       `TINA_CLIENT_ID=`/`TINA_TOKEN=`.
-       - **`tina/config.ts` + `tina/tina-lock.json` must themselves be committed and pushed to GitHub**
-         — Tina Cloud indexes the schema from the real repo, not local files. Both are tracked (only
-         `tina/__generated__/` is gitignored).
-       - **First-ever push needs a manual "Reindex" click, not just the push itself**: right after that
-         first push, opening a collection in `/admin` failed with `GetCollection failed: ... Index
-         version '0' no longer supported. Reindex your project.` — confirmed via `git fetch` that the
-         push had already landed on `origin/main`, so this wasn't a missing-push problem. Per Tina's own
-         troubleshooting docs, version `0` means the branch has never been successfully indexed yet;
-         the fix was clicking **Reindex** on the Tina Cloud dashboard
-         (`app.tina.io/projects/<id>/configuration`) — resolved it immediately. Only needed once, for
-         that first push; not expected on ordinary content saves afterward.
-    2. Create the Cloudflare Workers project (see the exact dashboard field values under Development
-       below — this account's dashboard defaults to a unified "Workers" creation flow, not the older
-       Pages "Connect to Git" flow). Add `TINA_CLIENT_ID` / `TINA_TOKEN` as build-time Variables there
-       (NOT committed to the repo — the token is a secret) before the first deploy, or that build fails
-       with a clear "Client not configured" error (confirmed locally).
-    3. That gives a `*.workers.dev` URL — usable for Brett's preview/approval now, and the thing to
-       paste back into Tina Cloud's production URL field. Swap it for `drmontgomery.org` later; that's
-       a one-field update, not a redo of any of this.
-    4. Invite Brett as a Tina Cloud collaborator by email from the dashboard (separate from anything
-       Cloudflare — no GitHub needed on his end).
+  - **Setup status (complete)**: Tina Cloud account connected to the `montgojames/drmontgomery` GitHub
+    repo (GitHub OAuth — only James did this, not Brett). `tina/config.ts` + `tina/tina-lock.json` are
+    committed and pushed — Tina Cloud indexes the schema from the real repo, not local files (only
+    `tina/__generated__/` is gitignored). Cloudflare Workers project created and connected to GitHub,
+    with `TINA_CLIENT_ID` / `TINA_TOKEN` set as build-time Variables in Cloudflare's dashboard (NOT
+    committed to the repo — the token is a secret). Tina Cloud's production URL is set to
+    `https://drmontgomery.org`, matching the live Workers custom domain.
+    - **Reference note**: the first-ever push needed a manual **Reindex** click, not just the push
+      itself — a fresh branch initially reports `GetCollection failed: ... Index version '0' no longer
+      supported. Reindex your project.`, which just means it hasn't been indexed yet, not a missing-push
+      problem. Fixed by clicking **Reindex** on the Tina Cloud dashboard
+      (`app.tina.io/projects/<id>/configuration`). Only needed once, for that first push; not expected
+      on ordinary content saves.
   - **Brett's login experience, end to end**: he never touches GitHub or Git at all. James invites him
     by email from the Tina Cloud dashboard; Brett gets an email, sets a password (or uses a magic
-    link), and from then on goes to `<the site's current URL>/admin`, logs in with that Tina Cloud
+    link), and from then on goes to `https://drmontgomery.org/admin`, logs in with that Tina Cloud
     account, picks an article from the collection list, edits it in the rich-text editor shown above,
     and clicks Save. Tina Cloud's backend commits the change to GitHub on his behalf; Cloudflare Workers
     Builds then rebuilds and redeploys the live site the same way it already does for any other push to
     `main` — nothing new on that side. (See the Cloudflare Access note under Development, though —
     it's scoped to `/admin/suggestions` specifically, not `/admin/*`, precisely so Brett does NOT hit a
     second login prompt before Tina's own when he goes to `/admin` to edit content.)
-  - **Admin location**: `/admin` on whatever the site's current URL is — the `*.workers.dev` preview
-    now, `drmontgomery.org` later — since it's a path in the same build output, not a separate domain or
-    hosting setup.
-- **Cloudflare Workers** (with static assets — free tier) for hosting, replacing what was originally
-  planned as Cloudflare Pages. Cloudflare's dashboard now defaults new projects to a unified
-  Workers-plus-static-assets model rather than the classic Pages "Connect to Git" flow (confirmed by
-  hitting this directly: the dashboard offered a "Create a Worker" flow with no Pages option and no
-  "build output directory" field at all). Functionally this project doesn't need anything Pages had
-  that Workers lacks — one Worker script (`worker/index.ts`) handles the handful of dynamic routes and
-  serves everything else straight from the static build via an `assets` binding, configured in
-  `wrangler.jsonc`:
+  - **Admin location**: `https://drmontgomery.org/admin` — a path in the same build output, not a
+    separate domain or hosting setup.
+- **Cloudflare Workers** (with static assets — free tier) is the hosting platform — not Cloudflare
+  Pages. (Cloudflare's dashboard now defaults new projects to a unified Workers-plus-static-assets
+  model rather than the classic Pages "Connect to Git" flow — confirmed by hitting this directly: no
+  Pages option, no "build output directory" field at all.) One Worker script (`worker/index.ts`)
+  handles the handful of dynamic routes and serves everything else straight from the static build via
+  an `assets` binding, configured in `wrangler.jsonc`:
   - `"assets": { "directory": "./dist", "binding": "ASSETS", "run_worker_first": ["/api/*",
     "/admin/suggestions"] }` — only those two path patterns are routed into the Worker; everything
     else (including `/admin/index.html`, TinaCMS's own static bundle, which happens to share the
@@ -277,20 +256,20 @@ Reads like a thoughtful, warm health publication, not a clinic. Warm and calm, n
     Cloudflare provisions automatically on deploy — there is no separate dashboard KV-binding step.
 - **Pagefind** for site search — static index built at `npm run build` time
   (`astro build && pagefind --site dist`), queried client-side on `/search`. No server/Function needed.
-- Domain: drmontgomery.org (owned). The .com is a different physician — cannot use it.
+- **Domain: `drmontgomery.org` — live.** Both the apex and `www` are attached as Cloudflare Workers
+  custom domains. Registered at Automattic (WordPress.com), with DNS managed at Cloudflare; renews July
+  2027. The `.com` is a different physician — cannot use it.
 - Content stored as Markdown in the repo (portable, no lock-in).
 
-## Build sequence
-1. Scaffold Astro project. ✅ Done.
-2. Build ONE page (homepage) fully themed + deploy to Cloudflare to prove the pipeline end-to-end and
-   sanity-check that the theme reads as intentional, not generic. ✅ Done (originally deployed via
-   Cloudflare Pages; the project has since migrated to the Workers-plus-static-assets model — see
-   Stack & hosting above — but the original pipeline-proving goal of this step still stands).
-3. Migrate existing content into Markdown (with the mechanical copy-edit pass). ✅ Done.
-4. Add interactive features last. 🔄 In progress — see build order under Features above.
+## Current state
+Astro static site, live at `https://drmontgomery.org` on Cloudflare Workers (apex and `www` both
+attached as custom domains). Content has been migrated from WordPress.com into Markdown and is
+editable via TinaCMS. Interactive features are mostly live — see per-feature status under Features
+above (Printable/Share and Suggest-a-topic done; Email signup and Testimonials still to build).
 
 ## Notes
-- The current live site is on WordPress.com; content will be migrated off it.
+- Content has migrated off WordPress.com onto this site. The WordPress.com account/plan is being
+  retired but has not been cancelled yet (see Domain under Stack & hosting for registrar/DNS details).
 - Verify current prices/tools rather than assuming; don't rely on stale memory for pricing or versions.
 
 ## Development
@@ -330,15 +309,15 @@ npx tinacms build`, real credentials, not the `--local --skip-cloud-checks` dev 
 correctly at `/admin/` alongside all of it, confirming `run_worker_first`'s narrow scope
 (`["/api/*", "/admin/suggestions"]`) really does leave Tina's bundle as a plain static file.
 
-**One-time Cloudflare setup required before deploying** (KV namespace creation can be done from the
-CLI; the rest needs dashboard access):
-1. **Create the real KV namespace**: `npx wrangler kv namespace create SUGGESTIONS` (or Cloudflare
-   dashboard → Workers & Pages → KV → Create a namespace). Copy the id it returns into
+**One-time Cloudflare setup — complete; kept here as a reference/runbook** (KV namespace creation can
+be done from the CLI; the rest needs dashboard access):
+1. ✅ Done. **Create the real KV namespace**: `npx wrangler kv namespace create SUGGESTIONS` (or
+   Cloudflare dashboard → Workers & Pages → KV → Create a namespace). Copy the id it returns into
    `wrangler.jsonc`'s `kv_namespaces[0].id`, replacing the `"REPLACE_ME"` placeholder, then commit that
    change. Unlike the old Pages Functions setup, there is no separate dashboard "KV namespace bindings"
    step — the binding lives in `wrangler.jsonc` and Cloudflare provisions it automatically on deploy.
-2. **Create the Workers project and connect it to GitHub** (this account's dashboard defaults to a
-   unified "Create a Worker" flow rather than the older Pages "Connect to Git" flow — confirmed by
+2. ✅ Done. **Create the Workers project and connect it to GitHub** (this account's dashboard defaults
+   to a unified "Create a Worker" flow rather than the older Pages "Connect to Git" flow — confirmed by
    hitting it directly, not assumed). Exact field values for that flow:
    - **Project name**: `drmontgomery` (matches `wrangler.jsonc`'s `"name"`; not load-bearing if it
      differs, but keeping them the same avoids confusion later).
@@ -364,18 +343,19 @@ CLI; the rest needs dashboard access):
      Worker itself might use). Add two entries: `TINA_CLIENT_ID` = the Client ID from Tina Cloud, and
      `TINA_TOKEN` = the Read-Only Token from Tina Cloud with **Encrypt checked** (it's the more
      sensitive of the two, even though it's a read-only content token, not a write credential).
-3. **Cloudflare Access on `/admin/suggestions`** (not `/admin/*`): Zero Trust dashboard → Access →
-   Applications → Add an application → Self-hosted → Application domain: the site's current URL
-   (`*.workers.dev` for now, `drmontgomery.org` later), path `/admin/suggestions` → add a policy (e.g.
-   "Admins") → Include → Emails → list yours and Brett's exact email addresses → Save. Scoping this to
-   `/admin/suggestions` specifically — rather than the whole `/admin/*` prefix, which was the earlier
-   plan before this Worker restructure — is deliberate and resolves what was previously an open
-   question: TinaCMS's admin bundle lives at `/admin/index.html`/`/admin/`, the SAME prefix, and a
-   `/admin/*` Access policy would gate both, forcing Brett through Cloudflare's email+one-time-code
-   prompt AND THEN Tina Cloud's own login back to back. Since `wrangler.jsonc`'s `run_worker_first` only
-   ever routes `/admin/suggestions` into the Worker (not `/admin/*`), scoping Access the same way means
-   Tina's own login stays the only gate on the CMS, while the suggestions/testimonials admin view still
-   gets its own separate protection.
+3. ✅ Done. **Cloudflare Access on `/admin/suggestions`** (not `/admin/*`) — application domain
+   `drmontgomery.org`, path `/admin/suggestions`, policy restricted to James's and Brett's exact email
+   addresses. **Do not widen this scope.** Scoping to `/admin/suggestions` specifically, rather than
+   the whole `/admin/*` prefix, is deliberate: TinaCMS's admin bundle lives at
+   `/admin/index.html`/`/admin/`, the SAME prefix, and a `/admin/*` (or `/admin`) Access policy would
+   gate both, forcing Brett through Cloudflare's email+one-time-code prompt AND THEN Tina Cloud's own
+   login back to back. Since `wrangler.jsonc`'s `run_worker_first` only ever routes
+   `/admin/suggestions` into the Worker (not `/admin/*`), scoping Access the same way means Tina's own
+   login stays the only gate on the CMS, while the suggestions/testimonials admin view still gets its
+   own separate protection. To reproduce from scratch: Zero Trust dashboard → Access → Applications →
+   Add an application → Self-hosted → Application domain: `drmontgomery.org`, path
+   `/admin/suggestions` → add a policy (e.g. "Admins") → Include → Emails → list the exact addresses →
+   Save.
 
 Documentation: https://docs.astro.build
 - [Adding pages, dynamic routes, or middleware](https://docs.astro.build/en/guides/routing/)
